@@ -200,6 +200,7 @@ canvas,
 }
 
 .printout-link {
+  float: right;
   font-size: 0.6em;
   font-weight: 400;
   word-spacing: normal;
