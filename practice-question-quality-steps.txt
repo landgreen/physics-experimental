@@ -1,0 +1,73 @@
+Practice Question Quality Steps
+
+1. Read the Page Like a Teacher
+Identify the equations, concepts, assumptions, example style, vocabulary, and expected math level already taught on the page.
+
+2. Define the Learning Boundary
+Only write problems that can be solved using the page content or clearly expected prerequisites. Do not introduce new formulas or techniques.
+
+3. Check That It Can Be Solved From the Page
+Verify that the page teaches the needed equation, symbols, units, assumptions, and algebra style. If a student would need outside content, simplify or move the problem.
+
+4. Research Good Problem Types
+Look at reputable physics sources for common problem patterns, misconceptions, and difficulty progressions. Use sources for inspiration, not copied wording.
+
+5. Build a Problem-Type Map
+List the specific skills the page should train, such as solving for force, rearranging Ohm's Law, reading graph slopes, or applying conservation.
+
+6. Build a Misconception Map
+List common student mistakes for the topic, then include problems that expose and correct them. Examples: distance vs. displacement, mass vs. weight, net force vs. applied force, series vs. parallel, and inverse-square errors.
+
+7. Plan the 20-30 Question Flow
+Choose a page-level sequence before writing: basic recognition, direct calculation, rearranged calculation, multi-step word problems, representation changes, then interpretation or challenge problems. Use chained problems that reference earlier examples only when the dependency is intentional and helpful.
+
+8. Include Prior-Content Connections
+Aim for about one out of every ten problems to require useful knowledge from earlier course pages, based on the course order. These should reinforce cumulative physics skills, such as using motion before force, force before momentum, momentum before energy, or energy before gravity. Do not require content from later pages, and keep the current page's idea as the main target of the problem.
+
+9. Design Difficulty Tiers
+Plan an intentional progression from direct substitution to rearranging, multi-step setup, sign/direction reasoning, and challenge-style applications.
+
+10. Prioritize Word Problems With Understanding
+Prefer prompts that require students to identify the model before calculating. Avoid too many prompts that directly state the equation or reduce to pure plug-and-chug.
+
+11. State Why Each Problem Exists
+Each problem should have a purpose, such as practicing a rearrangement, checking units, using signs, identifying net force, interpreting a graph, or addressing a misconception.
+
+12. Mix Representations
+Where the page supports it, include problems based on words, equations, tables, graphs, diagrams, before/after descriptions, comparisons, or simple sketches.
+
+13. Choose Numbers Intentionally
+Use clean numbers early and more realistic numbers later. Avoid arithmetic that distracts from the physics unless that difficulty is intentional.
+
+14. Vary Prompt Length and Realism
+Mix short direct prompts with longer word problems that include realistic context. Some longer prompts should include interesting background information or extra values that are not needed for the calculation, as long as the unnecessary information feels natural and does not make the problem confusing.
+
+15. Include Natural Unit Conversions
+Aim for about one out of every four problems to require one or two reasonable unit conversions, such as grams to kilograms, kilometers to meters, centimeters to meters, minutes to seconds, km/h to m/s, or kN to N. Make the conversion feel natural in the word problem instead of tacked on as extra work.
+
+16. Add Assumption Checks
+State required assumptions in the prompt or solution, such as ignore air resistance, constant acceleration, level surface, ideal battery, point charges, or uniform field.
+
+17. Include One Deliberately Unsolvable Problem
+Add exactly one intentionally unsolvable problem per page. It should look like a normal math problem at first, use the Example label, and include at least two given numbers, but it must still be missing one required value, assumption, or taught equation. Mix it into the practice set instead of placing it last. Keep the prompt focused, and make the answer explain what information is missing or what equation has not been taught, so students practice recognizing when a physics problem cannot be solved from the given information.
+
+18. Write Solutions in the Existing Style
+Show the equation, substitution, algebra if needed, final answer with units, and a short interpretation when useful. Use Example for math problems and Question for non-math conceptual prompts. In expandable details, use answer as the summary title for Question prompts and solution as the summary title for Example prompts. Keep the prompt readable with normal text or HTML notation when that fits the page, and reserve LaTeX for the solution. Use display math with double-dollar delimiters.
+
+19. Keep Algebra to One Equal Sign Per Line
+For clarity, avoid multiple equal signs in one displayed equation line. Split chained work into separate lines, such as the formula, then the substitution, then the simplified value.
+
+20. Limit Conceptual-Only Questions
+For calculation-heavy pages, use at most one or two conceptual-only questions, and only when they address an important misconception or interpretation.
+
+21. Review Repetition and Near-Duplicates
+Vary the unknown variable, context, equation form, sign convention, units, difficulty, and solution path. Flag problems with the same sentence structure, same unknown, same context, same solution path, or same underlying problem shape. Different numbers alone do not make a new problem.
+
+22. Check Coverage
+Confirm the set practices every major equation, important rearrangement, common mistake, and major representation taught on the page.
+
+23. Validate Physics and Math
+Check formulas, substitutions, arithmetic, units, signs, assumptions, and physical reasonableness for every solution. For multi-step or realistic-number problems, verify rounded answers with an independent calculation.
+
+24. Match the Page's Teacher Voice
+Rewrite prompts so they sound like the existing notes: plain, direct, readable, and useful rather than generic worksheet filler.
