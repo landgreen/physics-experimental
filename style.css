@@ -203,6 +203,8 @@ canvas,
   float: right;
   font-size: 0.6em;
   font-weight: 400;
+  position: relative;
+  top: 0.15em;
   word-spacing: normal;
 }
 
