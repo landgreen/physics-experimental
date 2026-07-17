@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 import re
 from html.parser import HTMLParser
@@ -73,6 +74,8 @@ class PracticeCardParser(HTMLParser):
                 text = re.sub(r"\s+", " ", " ".join(self.card_parts)).strip()
                 if text.startswith("Example:"):
                     self.questions.append(text.removeprefix("Example:").strip())
+                elif text.startswith("Question:"):
+                    self.questions.append(text.removeprefix("Question:").strip())
                 self.card_parts = None
         elif tag == "article":
             if self.practice_article_depth == self.article_depth:
@@ -86,14 +89,65 @@ class PracticeCardParser(HTMLParser):
             self.card_parts.append(data)
 
 
-def practice_questions() -> list[str]:
-    """Return direct practice-card prompts, excluding solutions and the Reading card."""
+@dataclass(frozen=True)
+class PracticePage:
+    """A notes page that has student-facing questions in a Practice section."""
+
+    source: Path
+    title: str
+    slug: str
+    questions: tuple[str, ...]
+
+
+def practice_questions(source_page: Path = SOURCE_PAGE) -> list[str]:
+    """Return direct practice-card prompts, excluding solutions and Reading cards."""
 
     parser = PracticeCardParser()
-    parser.feed(SOURCE_PAGE.read_text(encoding="utf-8"))
+    parser.feed(source_page.read_text(encoding="utf-8"))
     if not parser.questions:
-        raise ValueError("No Motion practice questions were found.")
+        raise ValueError(f"No practice questions were found in {source_page}.")
     return parser.questions
+
+
+def page_title(source_page: Path) -> str:
+    """Read the browser title so the worksheet has the same lesson name as its notes page."""
+
+    match = re.search(r"<title>\s*(.*?)\s*</title>", source_page.read_text(encoding="utf-8"), re.DOTALL)
+    if match is None:
+        raise ValueError(f"No HTML title was found in {source_page}.")
+    return re.sub(r"\s+", " ", match.group(1)).strip()
+
+
+def practice_pages() -> list[PracticePage]:
+    """Find every notes page that contains direct student prompts in a Practice section."""
+
+    candidates: list[tuple[Path, tuple[str, ...]]] = []
+    for source_page in sorted((ROOT / "notes").glob("**/index.html")):
+        try:
+            questions = practice_questions(source_page)
+        except ValueError:
+            continue
+        candidates.append((source_page, tuple(questions)))
+
+    leaf_counts: dict[str, int] = {}
+    for source_page, _questions in candidates:
+        leaf_counts[source_page.parent.name] = leaf_counts.get(source_page.parent.name, 0) + 1
+
+    pages: list[PracticePage] = []
+    for source_page, questions in candidates:
+        leaf_name = source_page.parent.name
+        slug = leaf_name
+        if leaf_counts[leaf_name] > 1:
+            slug = f"{source_page.parent.parent.name}-{leaf_name}"
+        pages.append(
+            PracticePage(
+                source=source_page,
+                title=page_title(source_page),
+                slug=slug,
+                questions=questions,
+            )
+        )
+    return pages
 
 
 def workspace_line_count(question: str) -> int:
@@ -114,13 +168,20 @@ def question_block_height(question: str, number: int, extra_lines: int) -> float
     return (len(wrapped_question) * QUESTION_LEADING) + 14 + workspace_height + 18
 
 
-def page_count(questions: list[str], extra_lines: int) -> int:
+def page_count(questions: list[str], extra_lines: int | list[int]) -> int:
     """Calculate the page count for a title page and later pages with shared margins."""
+
+    if isinstance(extra_lines, int):
+        workspace_extras = [extra_lines] * len(questions)
+    else:
+        if len(extra_lines) != len(questions):
+            raise ValueError("Each question needs one workspace-line count.")
+        workspace_extras = extra_lines
 
     pages = 1
     y = FIRST_PAGE_QUESTION_Y
-    for number, question in enumerate(questions, start=1):
-        block_height = question_block_height(question, number, extra_lines)
+    for number, (question, workspace_extra) in enumerate(zip(questions, workspace_extras), start=1):
+        block_height = question_block_height(question, number, workspace_extra)
         if y - block_height < BOTTOM_MARGIN:
             pages += 1
             y = LATER_PAGE_QUESTION_Y
@@ -142,19 +203,50 @@ def choose_workspace_extra_lines(questions: list[str]) -> int:
     return max(fitting_extras, default=0)
 
 
-def build_pdf(output_path: Path) -> int:
+def workspace_extra_lines(questions: list[str]) -> list[int]:
+    """Balance workspace across an even number of printable pages when possible."""
+
+    target_pages = page_count(questions, extra_lines=0)
+    if target_pages % 2:
+        target_pages += 1
+
+    extras = [choose_workspace_extra_lines(questions)] * len(questions)
+    next_question = 0
+    while True:
+        fitting_question: int | None = None
+        for offset in range(len(questions)):
+            question_index = (next_question + offset) % len(questions)
+            candidate = extras.copy()
+            candidate[question_index] += 1
+            if page_count(questions, candidate) <= target_pages:
+                fitting_question = question_index
+                break
+        if fitting_question is None:
+            return extras
+        extras[fitting_question] += 1
+        next_question = (fitting_question + 1) % len(questions)
+
+
+def build_pdf(
+    output_path: Path,
+    source_page: Path = SOURCE_PAGE,
+    title: str | None = None,
+) -> int:
+    """Create one printable, questions-only worksheet for a notes Practice section."""
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas = Canvas(str(output_path), pagesize=letter)
-    canvas.setTitle("Motion Practice Questions")
+    lesson_title = title or page_title(source_page)
+    canvas.setTitle(f"{lesson_title} Practice Questions")
     canvas.setAuthor("Physics Notes")
-    questions = practice_questions()
-    extra_lines = choose_workspace_extra_lines(questions)
+    questions = practice_questions(source_page)
+    extra_lines = workspace_extra_lines(questions)
     canvas.setFont("Helvetica", 15)
-    canvas.drawString(LEFT_MARGIN, PAGE_HEIGHT - 0.9 * inch, "motion - practice problems")
+    canvas.drawString(LEFT_MARGIN, PAGE_HEIGHT - 0.9 * inch, f"{lesson_title.lower()} - practice problems")
     y = FIRST_PAGE_QUESTION_Y
-    for number, question in enumerate(questions, start=1):
+    for number, (question, workspace_extra) in enumerate(zip(questions, extra_lines), start=1):
         wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, QUESTION_WIDTH)
-        required_height = question_block_height(question, number, extra_lines)
+        required_height = question_block_height(question, number, workspace_extra)
         if y - required_height < BOTTOM_MARGIN:
             canvas.showPage()
             y = LATER_PAGE_QUESTION_Y
@@ -163,16 +255,31 @@ def build_pdf(output_path: Path) -> int:
         for line in wrapped_question:
             canvas.drawString(LEFT_MARGIN, y, line)
             y -= QUESTION_LEADING
-        y -= 14 + ((workspace_line_count(question) + extra_lines) * SPACE_LINE_HEIGHT) + 18
+        y -= 14 + ((workspace_line_count(question) + workspace_extra) * SPACE_LINE_HEIGHT) + 18
 
     canvas.save()
     return len(questions)
 
 
+def build_all_pdfs(output_directory: Path = ROOT / "output/pdf") -> dict[str, int]:
+    """Create a worksheet PDF for every Practice section in the notes."""
+
+    generated: dict[str, int] = {}
+    for page in practice_pages():
+        output_path = output_directory / f"{page.slug}-practice-questions.pdf"
+        generated[page.slug] = build_pdf(output_path, source_page=page.source, title=page.title)
+    return generated
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="Path for the generated PDF.")
+    parser.add_argument("--all", action="store_true", help="Generate worksheets for every Practice section.")
     args = parser.parse_args()
+    if args.all:
+        generated = build_all_pdfs()
+        print(f"Generated {len(generated)} practice worksheets.")
+        return
     question_count = build_pdf(args.output)
     print(f"Generated {args.output} with {question_count} questions.")
 
