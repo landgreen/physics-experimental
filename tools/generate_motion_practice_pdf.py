@@ -17,6 +17,16 @@ from reportlab.pdfgen.canvas import Canvas
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PAGE = ROOT / "notes/motion/motion/index.html"
 DEFAULT_OUTPUT = ROOT / "output/pdf/motion-practice-questions.pdf"
+PAGE_WIDTH, PAGE_HEIGHT = letter
+LEFT_MARGIN = 0.65 * inch
+RIGHT_MARGIN = PAGE_WIDTH - 0.65 * inch
+BOTTOM_MARGIN = 0.65 * inch
+QUESTION_WIDTH = RIGHT_MARGIN - LEFT_MARGIN
+QUESTION_FONT_SIZE = 10.5
+QUESTION_LEADING = 14.5
+SPACE_LINE_HEIGHT = 14
+FIRST_PAGE_QUESTION_Y = PAGE_HEIGHT - 1.25 * inch
+LATER_PAGE_QUESTION_Y = PAGE_HEIGHT - 0.8 * inch
 
 
 class PracticeCardParser(HTMLParser):
@@ -96,33 +106,64 @@ def workspace_line_count(question: str) -> int:
     return 5
 
 
+def question_block_height(question: str, number: int, extra_lines: int) -> float:
+    """Return the vertical space used by one question and its blank workspace."""
+
+    wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, QUESTION_WIDTH)
+    workspace_height = (workspace_line_count(question) + extra_lines) * SPACE_LINE_HEIGHT
+    return (len(wrapped_question) * QUESTION_LEADING) + 14 + workspace_height + 18
+
+
+def page_count(questions: list[str], extra_lines: int) -> int:
+    """Calculate the page count for a title page and later pages with shared margins."""
+
+    pages = 1
+    y = FIRST_PAGE_QUESTION_Y
+    for number, question in enumerate(questions, start=1):
+        block_height = question_block_height(question, number, extra_lines)
+        if y - block_height < BOTTOM_MARGIN:
+            pages += 1
+            y = LATER_PAGE_QUESTION_Y
+        y -= block_height
+    return pages
+
+
+def choose_workspace_extra_lines(questions: list[str]) -> int:
+    """Maximize evenly distributed workspace without adding another sheet side."""
+
+    target_pages = page_count(questions, extra_lines=0)
+    if target_pages % 2:
+        target_pages += 1
+    fitting_extras = [
+        extra_lines
+        for extra_lines in range(9)
+        if page_count(questions, extra_lines) == target_pages
+    ]
+    return max(fitting_extras, default=0)
+
+
 def build_pdf(output_path: Path) -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas = Canvas(str(output_path), pagesize=letter)
     canvas.setTitle("Motion Practice Questions")
     canvas.setAuthor("Physics Notes")
-    page_width, page_height = letter
-    left_margin = 0.65 * inch
-    right_margin = page_width - 0.65 * inch
-    bottom_margin = 0.65 * inch
-    question_width = right_margin - left_margin
-    question_font_size = 10.5
-    question_leading = 14.5
-    line_height = 14
-    y = page_height - 0.8 * inch
     questions = practice_questions()
+    extra_lines = choose_workspace_extra_lines(questions)
+    canvas.setFont("Helvetica", 15)
+    canvas.drawString(LEFT_MARGIN, PAGE_HEIGHT - 0.9 * inch, "motion - practice problems")
+    y = FIRST_PAGE_QUESTION_Y
     for number, question in enumerate(questions, start=1):
-        wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", question_font_size, question_width)
-        required_height = (len(wrapped_question) * question_leading) + 15 + (workspace_line_count(question) * line_height) + 18
-        if y - required_height < bottom_margin:
+        wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, QUESTION_WIDTH)
+        required_height = question_block_height(question, number, extra_lines)
+        if y - required_height < BOTTOM_MARGIN:
             canvas.showPage()
-            y = page_height - 0.8 * inch
+            y = LATER_PAGE_QUESTION_Y
 
-        canvas.setFont("Helvetica", question_font_size)
+        canvas.setFont("Helvetica", QUESTION_FONT_SIZE)
         for line in wrapped_question:
-            canvas.drawString(left_margin, y, line)
-            y -= question_leading
-        y -= 14 + (workspace_line_count(question) * line_height) + 18
+            canvas.drawString(LEFT_MARGIN, y, line)
+            y -= QUESTION_LEADING
+        y -= 14 + ((workspace_line_count(question) + extra_lines) * SPACE_LINE_HEIGHT) + 18
 
     canvas.save()
     return len(questions)
