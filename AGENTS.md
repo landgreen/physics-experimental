@@ -4,6 +4,16 @@
 
 This is a static physics course notes website. Most course content lives in `notes/`, with each notes page usually stored as an `index.html` file inside its topic folder.
 
+## Workflow
+
+- Make changes locally in the `physics-experimental` folder.
+- Upload each completed change to this repository's GitHub remote.
+
+## Publishing
+
+- Never upload, deploy, or publish this repository to `https://landgreen.github.io/` or the main Landgreen site.
+- This repository is for local work only. Publishing may be appropriate for the user's other repositories when they explicitly request it.
+
 ## General Editing Guidance
 
 - Match the existing HTML, CSS classes, page structure, and teacher voice on the page being edited.
