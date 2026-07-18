@@ -6,8 +6,11 @@ This is a static physics course notes website. Most course content lives in `not
 
 ## Workflow
 
-- Make changes locally in the `physics-experimental` folder.
-- Upload each completed change to this repository's GitHub remote.
+- Make edits directly in the existing local `physics-experimental` checkout by default.
+- Do not create a separate branch or worktree unless the user explicitly requests one.
+- Complete the requested edits and local verification without pausing for intermediate design, specification, plan, or review approval unless a necessary user decision blocks the work.
+- Include the user's current in-scope edits in the completed change, while excluding unrelated untracked or generated files.
+- When the work is ready, provide one concise summary and ask once for approval before the final commit and push to this repository's GitHub remote.
 
 ## Publishing
 
