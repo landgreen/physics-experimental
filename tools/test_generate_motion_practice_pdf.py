@@ -1,13 +1,16 @@
 """Checks for the Motion practice worksheet generator."""
 
 import unittest
+import re
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pdfplumber
 from pypdf import PdfReader
 
 from generate_motion_practice_pdf import (
     build_all_pdfs,
+    build_pdf,
     choose_workspace_extra_lines,
     page_count,
     practice_pages,
@@ -62,6 +65,38 @@ class PracticeQuestionTests(unittest.TestCase):
                 self.assertIn(page.title.lower(), text.lower())
                 if page.slug == "motion":
                     self.assertNotIn("At the meeting time, both trains have the same position.", text)
+
+    def test_compacts_units_into_four_pages(self) -> None:
+        units_page = next(page for page in practice_pages() if page.slug == "units")
+
+        with TemporaryDirectory() as directory:
+            pdf_path = Path(directory) / "units-practice-questions.pdf"
+            build_pdf(pdf_path, source_page=units_page.source, title=units_page.title)
+
+            reader = PdfReader(pdf_path)
+            self.assertEqual(len(reader.pages), 4)
+            final_page = reader.pages[3].extract_text() or ""
+            self.assertIn("31. You walk 50 m northeast.", final_page)
+            self.assertIn("35. A long spacecraft tracking distance", final_page)
+            self.assertNotIn("30. A plane is moving 20 m/s", final_page)
+
+            with pdfplumber.open(pdf_path) as pdf:
+                column_counts = []
+                for page in pdf.pages:
+                    labels = [word for word in page.extract_words() if re.fullmatch(r"\d+\.", word["text"])]
+                    left = sum(word["x0"] < page.width / 2 for word in labels)
+                    column_counts.append((left, len(labels) - left))
+                self.assertEqual(column_counts, [(5, 5), (5, 5), (5, 5), (3, 2)])
+
+    def test_names_the_momentum_conservation_worksheet(self) -> None:
+        conservation_page = next(page for page in practice_pages() if page.slug == "momentum-conservation")
+
+        with TemporaryDirectory() as directory:
+            pdf_path = Path(directory) / "momentum-conservation-practice-questions.pdf"
+            build_pdf(pdf_path, source_page=conservation_page.source, title=conservation_page.title)
+
+            heading = (PdfReader(pdf_path).pages[0].extract_text() or "").splitlines()[0]
+            self.assertEqual(heading, "momentum conservation - practice problems")
 
 
 if __name__ == "__main__":

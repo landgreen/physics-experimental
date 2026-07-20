@@ -75,10 +75,15 @@
     </p>
     <details>
       <summary>double slit wave interference</summary>
-      <div>gap separation = <input id='slit-width-slider' type="range" step="1" value="100" min="5" max="290" style="width: 165px;"></div>
       <svg viewBox="100 0 600 600">
+        <defs>
+          <clipPath id="incoming-wave-region" clipPathUnits="userSpaceOnUse">
+            <rect x="-101" y="0" width="411.1" height="600" />
+          </clipPath>
+          <linearGradient id="interference-amplitude-gradient" gradientUnits="userSpaceOnUse" x1="691" y1="0" x2="691" y2="600"></linearGradient>
+        </defs>
         <g stroke="#f08" stroke-width="20" fill="none">
-          <g id="slit-1" transform="translate(300, 200)">
+          <g id="slit-1" transform="translate(307, 200)">
             <circle r="40" opacity="0.7" />
             <circle r="100" opacity="0.63" />
             <circle r="160" opacity="0.56" />
@@ -92,7 +97,7 @@
             <circle r="640" opacity="0.07" />
             <circle r="700" opacity="0.04" />
           </g>
-          <g id="slit-2" transform="translate(300, 400)">
+          <g id="slit-2" transform="translate(307, 400)">
             <circle r="40" opacity="0.7" />
             <circle r="100" opacity="0.63" />
             <circle r="160" opacity="0.56" />
@@ -107,26 +112,159 @@
             <circle r="700" opacity="0.04" />
           </g>
         </g>
-        <rect x="-101" y="0" width="406" height="600" fill="#fff" stroke="none" />
-        <path d="M60 0 v600 M110 0 v600 M170 0 v600 M230 0 v600 M280 0 v600" stroke="#f08" opacity="1" stroke-width="20" fill="none" />
-        <path id="wall" d="M300 0 v195 M300 205 v190 M300 405 v200" stroke="#000" stroke-width="10" fill="none" />
+        <rect x="-101" y="0" width="411" height="600" fill="#fff" stroke="none" />
+        <g clip-path="url(#incoming-wave-region)">
+          <path id="incoming-wavefronts" d="M80 0 v600 M140 0 v600 M200 0 v600 M260 0 v600" stroke="#f08" opacity="1" stroke-width="20" fill="none" />
+        </g>
+        <path id="wall" d="M300 0 v195 M300 205 v190 M300 405 v200" stroke="#000" stroke-width="20" fill="none" />
+        <g id="wave-amplitude-display">
+          <line x1="691" y1="0" x2="691" y2="600" stroke="#fff" stroke-width="28" />
+          <line id="wave-amplitude-indicator" x1="691" y1="0" x2="691" y2="600" stroke="url(#interference-amplitude-gradient)" stroke-width="18">
+            <title>Relative wave amplitude at the edge of the diagram</title>
+          </line>
+        </g>
       </svg>
+      <div class="center">separation = <input id='slit-width-slider' type="range" step="1" value="100" min="5" max="290" style="width: 165px;"></div>
+      <br>
+      <strong>Question:</strong> How many constructive interference peaks are on the far right edge of this diagram?
+      <details>
+        <summary>answer</summary>
+        <p id="constructive-peak-answer">There are 5 constructive interference peaks.</p>
+        <label><input id="amplitude-display-toggle" type="checkbox" style="width:14px;"> show interference amplitude</label>
+      </details>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
       <script>
         (function twoSlit() {
           const slit1 = document.getElementById("slit-1")
           const slit2 = document.getElementById("slit-2")
           const wall = document.getElementById("wall")
+          const incomingWavefronts = document.getElementById("incoming-wavefronts")
+          const amplitudeGradient = document.getElementById("interference-amplitude-gradient")
+          const amplitudeDisplay = document.getElementById("wave-amplitude-display")
+          const amplitudeDisplayToggle = document.getElementById("amplitude-display-toggle")
+          const constructivePeakAnswer = document.getElementById("constructive-peak-answer")
+          const details = slit1.closest("details")
+          const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
+          const wavefronts = [...slit1.querySelectorAll("circle"), ...slit2.querySelectorAll("circle")]
+            .map(circle => ({
+              circle,
+              startingRadius: Number(circle.getAttribute("r"))
+            }))
+          const waveCycleRadius = 720
+          const minimumWavefrontRadius = 0
+          const maximumWavefrontRadius = waveCycleRadius + minimumWavefrontRadius
+          const wavefrontStrokeWidth = 20
+          const incomingWavefrontHalfWidth = 10
+          const incomingWaveExtension = 20
+          const wallCenterX = 300
+          const outgoingWaveOriginX = 310
+          const amplitudeIndicatorX = 691
+          const diagramHeight = 600
+          const wavelength = 60
+          const outgoingWaveOriginOffset = outgoingWaveOriginX - wallCenterX
+          const slitTransitionOverlap = incomingWavefrontHalfWidth - minimumWavefrontRadius
+          const outerWavefrontRadius = Math.max(...wavefronts.map(wavefront => wavefront.startingRadius))
+          const outgoingWaveOffset = waveCycleRadius - outerWavefrontRadius + slitTransitionOverlap + incomingWaveExtension - outgoingWaveOriginOffset
+
+          let animationFrame = null
+
+          function updateAmplitudeIndicator(slit1Vertical, slit2Vertical) {
+            amplitudeGradient.replaceChildren()
+            const centerY = (slit1Vertical + slit2Vertical) / 2
+            const centerDistance = Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, centerY - slit1Vertical)
+            const centerIntensity = 4 / centerDistance
+
+            for (let y = 0; y <= diagramHeight; y += 3) {
+              const distanceFromSlit1 = Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, y - slit1Vertical)
+              const distanceFromSlit2 = Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, y - slit2Vertical)
+              const pathDifference = distanceFromSlit1 - distanceFromSlit2
+              const amplitudeFromSlit1 = 1 / Math.sqrt(distanceFromSlit1)
+              const amplitudeFromSlit2 = 1 / Math.sqrt(distanceFromSlit2)
+              const phaseDifference = 2 * Math.PI * pathDifference / wavelength
+              const intensity = amplitudeFromSlit1 ** 2 + amplitudeFromSlit2 ** 2
+                + 2 * amplitudeFromSlit1 * amplitudeFromSlit2 * Math.cos(phaseDifference)
+              const relativeIntensity = Math.max(0, Math.min(1, intensity / centerIntensity))
+              const interferenceOrder = Math.abs(pathDifference / wavelength)
+              const successivePeakFalloff = 0.8 ** interferenceOrder
+              const displayedIntensity = relativeIntensity * successivePeakFalloff
+              const stop = document.createElementNS("http://www.w3.org/2000/svg", "stop")
+
+              stop.setAttribute("offset", `${y / diagramHeight}`)
+              stop.setAttribute("stop-color", "#099")
+              stop.setAttribute("stop-opacity", `${0.05 + 0.95 * displayedIntensity}`)
+              amplitudeGradient.appendChild(stop)
+            }
+
+            const pathDifferenceAtTop = Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, slit1Vertical)
+              - Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, slit2Vertical)
+            const pathDifferenceAtBottom = Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, diagramHeight - slit1Vertical)
+              - Math.hypot(amplitudeIndicatorX - outgoingWaveOriginX, diagramHeight - slit2Vertical)
+            const firstConstructiveOrder = Math.ceil(Math.min(pathDifferenceAtTop, pathDifferenceAtBottom) / wavelength - 1e-10)
+            const lastConstructiveOrder = Math.floor(Math.max(pathDifferenceAtTop, pathDifferenceAtBottom) / wavelength + 1e-10)
+            const constructivePeakCount = lastConstructiveOrder - firstConstructiveOrder + 1
+            const peakLabel = constructivePeakCount === 1 ? "peak" : "peaks"
+
+            constructivePeakAnswer.textContent = `There ${constructivePeakCount === 1 ? "is" : "are"} ${constructivePeakCount} constructive interference ${peakLabel}.`
+          }
+
+          function animateWavefronts(time) {
+            const travel = (time * 0.04) % 60
+            incomingWavefronts.setAttribute("transform", `translate(${travel.toFixed(2)} 0)`)
+
+            for (const wavefront of wavefronts) {
+              const wrappedRadius = (wavefront.startingRadius + outgoingWaveOffset + travel) % waveCycleRadius
+              const frontRadius = minimumWavefrontRadius + wrappedRadius
+              const strokeWidth = Math.min(wavefrontStrokeWidth, frontRadius - minimumWavefrontRadius)
+              const radius = frontRadius - strokeWidth / 2
+              const opacity = frontRadius < 40
+                ? 1 - 0.3 * (frontRadius - minimumWavefrontRadius) / (40 - minimumWavefrontRadius)
+                : 0.7 * Math.pow((maximumWavefrontRadius - frontRadius) / (maximumWavefrontRadius - 40), 1.15)
+
+              wavefront.circle.setAttribute("r", radius.toFixed(2))
+              wavefront.circle.setAttribute("stroke-width", strokeWidth.toFixed(2))
+              wavefront.circle.setAttribute("opacity", opacity.toFixed(3))
+            }
+
+            animationFrame = requestAnimationFrame(animateWavefronts)
+          }
+
+          function updateWaveAnimation() {
+            if (details.open && !reducedMotion.matches && animationFrame === null) {
+              animationFrame = requestAnimationFrame(animateWavefronts)
+            } else if ((!details.open || reducedMotion.matches) && animationFrame !== null) {
+              cancelAnimationFrame(animationFrame)
+              animationFrame = null
+            }
+          }
+
+          details.addEventListener("toggle", updateWaveAnimation)
+          reducedMotion.addEventListener("change", updateWaveAnimation)
+          updateWaveAnimation()
+          updateAmplitudeIndicator(200, 400)
+
+          function updateAmplitudeDisplay() {
+            amplitudeDisplay.setAttribute("display", amplitudeDisplayToggle.checked ? "inline" : "none")
+          }
+
+          amplitudeDisplayToggle.addEventListener("change", updateAmplitudeDisplay)
+          updateAmplitudeDisplay()
 
           document.getElementById("slit-width-slider").addEventListener("input", () => {
-            slitSeparation = Number(document.getElementById("slit-width-slider").value);
+            const slitSeparation = Number(document.getElementById("slit-width-slider").value)
             const slit1Vertical = 300 - slitSeparation
             const slit2Vertical = 300 + slitSeparation
 
-            slit1.setAttribute("transform", `translate(300, ${slit1Vertical})`)
-            slit2.setAttribute("transform", `translate(300, ${slit2Vertical})`)
-            wall.setAttribute("d", `M300 0 v${slit1Vertical - 5} M300 ${slit1Vertical + 5}
+            slit1.setAttribute("transform", `translate(${outgoingWaveOriginX}, ${slit1Vertical})`)
+            slit2.setAttribute("transform", `translate(${outgoingWaveOriginX}, ${slit2Vertical})`)
+            wall.setAttribute("d", `M${wallCenterX} 0 v${slit1Vertical - 5} M${wallCenterX} ${slit1Vertical + 5}
                         v${Math.abs(slitSeparation * 2 - 10)}
-                        M300 ${slit2Vertical - 5} M300 ${slit2Vertical + 5} v400`)
+                        M${wallCenterX} ${slit2Vertical - 5} M${wallCenterX} ${slit2Vertical + 5} v400`)
+            updateAmplitudeIndicator(slit1Vertical, slit2Vertical)
           });
         })()
       </script>
@@ -135,7 +273,7 @@
       In 1801, Thomas Young produced a double slit interference <a href="https://www.youtube.com/watch?v=G4_4vcNqc-k">pattern</a> with beams of light.
       In 1909, the <a href="https://pubs.aip.org/aapt/ajp/article/84/9/671/1057864/Video-recording-true-single-photon-double-slit">experiment</a> was repeated with a single photon at a time.
       After passing through the double slit, each photon was measured at a single location,
-      but the sum of repeated experiments produced a wave interference pattern.
+      but the sum of repeated experiments produced a wave interference <a href="https://www.youtube.com/watch?v=995uiiudmiI">pattern</a>.
     </p>
   </article>
   <!-- <g dominant-baseline="central" font-size="8" font-family="Times New Roman" stroke="none" fill="#abaeb3">
@@ -160,6 +298,12 @@
       <path id="double-slit-probability-function" d="M 290 0 v100" stroke-width="0" fill="#abc" stroke-linecap="round" stroke-linejoin="round" />
     </g>
     <g id="double-slit-hits"></g>
+    <g font-family="Arial, sans-serif" font-size="3.7" text-anchor="middle">
+      <text x="16" y="147.5" fill="#345">emitter</text>
+      <text x="88.5" y="147.5" fill="#345">measurement</text>
+      <text x="217.5" y="147.5" fill="#abc">totals</text>
+      <text x="345" y="147.5" fill="#abc">interference pattern</text>
+    </g>
   </svg>
   <article>
     <ul class="listing" style="background-color: #fff; border-radius: 15px; padding:10px; border: #345 solid 4px;">
@@ -180,24 +324,13 @@
       </li>
       <li>
         <div>
-          wavelength = <input id='slit-wavelength' type="number" value='0.201' min="0" step="0.0001" style="width:100px;">
-          <br>slit separation = <input id='slit-separation' type="number" value='5' min="0" step="0.001" style="width:80px;">
-          <br>slit width = <input id='slit-slitWidth' type="number" value='0.5' min="0" step="0.01" style="width:117px;">
+          source wavelength = <input id='slit-wavelength' type="number" value='0.2' min="0" step="0.01" style="width:70px;">
+          <br>slit separation = <input id='slit-separation' type="number" value='2' min="0" step="0.05" style="width:80px;">
+          <br>slit width = <input id='slit-slitWidth' type="number" value='0.5' min="0" step="0.02" style="width:117px;">
           <!-- <br>target distance = <input id='slit-distance' type="number" value='100' min="0" step="1" style="width:100px;"> -->
         </div>
       </li>
     </ul>
-    <p>
-      The <a href="https://physics.weber.edu/schroeder/software/QuantumScattering2D.html">double slit</a> experiment isn't limited to photons.
-      In 1927, the experiment was repeated with one electron at a time.
-      In 2019, an interference pattern was produced by a 2000 atom molecule.
-    </p>
-    <p>
-      To produce a wave interference pattern, particles must be perfectly isolated from their environment.
-      That's why we still can't produce a double slit interference pattern for everyday sized objects, like cats.
-      It's just too hard to isolate large objects long enough to run the experiment.
-      Also, you might notice if you play with the simulation, the size of the slit needs to be similar to the size of the wave, and larger objects have smaller wavelength.
-    </p>
     <div class="example-small">
       <strong>Simulation:</strong> What happens when one slit is blocked? Why?
       <details>
@@ -229,6 +362,17 @@
         </p>
       </details>
     </div>
+    <p>
+      The <a href="https://physics.weber.edu/schroeder/software/QuantumScattering2D.html">double slit</a> experiment isn't limited to photons.
+      In 1927, the experiment was repeated with one electron at a time.
+      In 2019, an interference pattern was produced by a 2000 atom molecule.
+    </p>
+    <p>
+      To produce a wave interference pattern, particles must be perfectly isolated from their environment.
+      That's why we still can't produce a double slit interference pattern for everyday sized objects, like cats.
+      It's just too hard to isolate large objects long enough to run the experiment.
+      Also, you might notice if you play with the simulation, the size of the slit needs to be similar to the size of the wave, and larger objects have smaller wavelength.
+    </p>
     <br>
     <br>
     <!-- <details class="derive">
@@ -2740,7 +2884,7 @@
     </p>
   </article>
   <article>
-<h1 class='underlined'>Practice <a class="printout-link" href="../../../output/pdf/quantum-practice-questions.pdf">printout.pdf</a></h1>
+    <h1 class='underlined'>Practice <a class="printout-link" href="../../../output/pdf/quantum-practice-questions.pdf">printout.pdf</a></h1>
     <p>
       In case you wanted more practice I used AI to make some more problems. The rest of the site I made by hand, but generating endless problems seemed safe. I did find mistakes in the AI generated problems, and there are probably some I didn't find. Let me know if something could be fixed. I also added a practice problem on each page with no solution. That's intentional. Have fun!
     </p>

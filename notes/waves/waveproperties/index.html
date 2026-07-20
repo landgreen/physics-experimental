@@ -1133,8 +1133,13 @@
 				</p>
 				<div>gap separation = <input id='slit-width-slider' type="range" step="1" value="100" min="5" max="290" style="width: 165px;"></div>
 				<svg viewBox="100 0 600 600">
+					<defs>
+						<clipPath id="incoming-wave-region" clipPathUnits="userSpaceOnUse">
+							<rect x="-101" y="0" width="411.1" height="600" />
+						</clipPath>
+					</defs>
 					<g stroke="#f08" stroke-width="20" fill="none">
-						<g id="slit-1" transform="translate(300, 200)">
+						<g id="slit-1" transform="translate(307, 200)">
 							<circle r="40" opacity="0.7" />
 							<circle r="100" opacity="0.63" />
 							<circle r="160" opacity="0.56" />
@@ -1148,7 +1153,7 @@
 							<circle r="640" opacity="0.07" />
 							<circle r="700" opacity="0.04" />
 						</g>
-						<g id="slit-2" transform="translate(300, 400)">
+						<g id="slit-2" transform="translate(307, 400)">
 							<circle r="40" opacity="0.7" />
 							<circle r="100" opacity="0.63" />
 							<circle r="160" opacity="0.56" />
@@ -1163,26 +1168,84 @@
 							<circle r="700" opacity="0.04" />
 						</g>
 					</g>
-					<rect x="-101" y="0" width="406" height="600" fill="#fff" stroke="none" />
-					<path d="M60 0 v600 M110 0 v600 M170 0 v600 M230 0 v600 M280 0 v600" stroke="#f08" opacity="1" stroke-width="20" fill="none" />
-					<path id="wall" d="M300 0 v195 M300 205 v190 M300 405 v200" stroke="#000" stroke-width="10" fill="none" />
+					<rect x="-101" y="0" width="411" height="600" fill="#fff" stroke="none" />
+					<g clip-path="url(#incoming-wave-region)">
+						<path id="incoming-wavefronts" d="M80 0 v600 M140 0 v600 M200 0 v600 M260 0 v600" stroke="#f08" opacity="1" stroke-width="20" fill="none" />
+					</g>
+					<path id="wall" d="M300 0 v195 M300 205 v190 M300 405 v200" stroke="#000" stroke-width="20" fill="none" />
 				</svg>
 				<script>
 						(function twoSlit() {
 							const slit1 = document.getElementById("slit-1")
 							const slit2 = document.getElementById("slit-2")
 							const wall = document.getElementById("wall")
+							const incomingWavefronts = document.getElementById("incoming-wavefronts")
+							const details = slit1.closest("details")
+							const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
+							const wavefronts = [...slit1.querySelectorAll("circle"), ...slit2.querySelectorAll("circle")]
+								.map(circle => ({
+									circle,
+									startingRadius: Number(circle.getAttribute("r"))
+								}))
+							const waveCycleRadius = 720
+							const minimumWavefrontRadius = 0
+							const maximumWavefrontRadius = waveCycleRadius + minimumWavefrontRadius
+							const wavefrontStrokeWidth = 20
+							const incomingWavefrontHalfWidth = 10
+							const incomingWaveExtension = 20
+							const wallCenterX = 300
+							const outgoingWaveOriginX = 310
+							const outgoingWaveOriginOffset = outgoingWaveOriginX - wallCenterX
+							const slitTransitionOverlap = incomingWavefrontHalfWidth - minimumWavefrontRadius
+							const outerWavefrontRadius = Math.max(...wavefronts.map(wavefront => wavefront.startingRadius))
+							const outgoingWaveOffset = waveCycleRadius - outerWavefrontRadius + slitTransitionOverlap + incomingWaveExtension - outgoingWaveOriginOffset
+
+							let animationFrame = null
+
+							function animateWavefronts(time) {
+								const travel = (time * 0.04) % 60
+								incomingWavefronts.setAttribute("transform", `translate(${travel.toFixed(2)} 0)`)
+
+								for (const wavefront of wavefronts) {
+									const wrappedRadius = (wavefront.startingRadius + outgoingWaveOffset + travel) % waveCycleRadius
+									const frontRadius = minimumWavefrontRadius + wrappedRadius
+									const strokeWidth = Math.min(wavefrontStrokeWidth, frontRadius - minimumWavefrontRadius)
+									const radius = frontRadius - strokeWidth / 2
+									const opacity = frontRadius < 40
+										? 1 - 0.3 * (frontRadius - minimumWavefrontRadius) / (40 - minimumWavefrontRadius)
+										: 0.7 * Math.pow((maximumWavefrontRadius - frontRadius) / (maximumWavefrontRadius - 40), 1.15)
+
+									wavefront.circle.setAttribute("r", radius.toFixed(2))
+									wavefront.circle.setAttribute("stroke-width", strokeWidth.toFixed(2))
+									wavefront.circle.setAttribute("opacity", opacity.toFixed(3))
+								}
+
+								animationFrame = requestAnimationFrame(animateWavefronts)
+							}
+
+							function updateWaveAnimation() {
+								if (details.open && !reducedMotion.matches && animationFrame === null) {
+									animationFrame = requestAnimationFrame(animateWavefronts)
+								} else if ((!details.open || reducedMotion.matches) && animationFrame !== null) {
+									cancelAnimationFrame(animationFrame)
+									animationFrame = null
+								}
+							}
+
+							details.addEventListener("toggle", updateWaveAnimation)
+							reducedMotion.addEventListener("change", updateWaveAnimation)
+							updateWaveAnimation()
 
 							document.getElementById("slit-width-slider").addEventListener("input", () => {
 								slitSeparation = Number(document.getElementById("slit-width-slider").value);
 								const slit1Vertical = 300 - slitSeparation
 								const slit2Vertical = 300 + slitSeparation
 
-								slit1.setAttribute("transform", `translate(300, ${slit1Vertical})`)
-								slit2.setAttribute("transform", `translate(300, ${slit2Vertical})`)
-								wall.setAttribute("d", `M300 0 v${slit1Vertical - 5} M300 ${slit1Vertical + 5}
-													v${Math.abs(slitSeparation * 2 - 10)}
-													M300 ${slit2Vertical - 5} M300 ${slit2Vertical + 5} v400`)
+								slit1.setAttribute("transform", `translate(${outgoingWaveOriginX}, ${slit1Vertical})`)
+								slit2.setAttribute("transform", `translate(${outgoingWaveOriginX}, ${slit2Vertical})`)
+								wall.setAttribute("d", `M${wallCenterX} 0 v${slit1Vertical - 5} M${wallCenterX} ${slit1Vertical + 5}
+										v${Math.abs(slitSeparation * 2 - 10)}
+										M${wallCenterX} ${slit2Vertical - 5} M${wallCenterX} ${slit2Vertical + 5} v400`)
 							});
 						})()
 				</script>
@@ -1533,7 +1596,7 @@
 	</article>
 
 	<article>
-<h1 class='underlined'>Practice <a class="printout-link" href="../../../output/pdf/waveproperties-practice-questions.pdf">printout.pdf</a></h1>
+		<h1 class='underlined'>Practice <a class="printout-link" href="../../../output/pdf/waveproperties-practice-questions.pdf">printout.pdf</a></h1>
 		<p>
 			In case you wanted more practice I used AI to make some more problems. The rest of the site I made by hand, but generating endless problems seemed safe. I did find mistakes in the AI generated problems, and there are probably some I didn't find. Let me know if something could be fixed. I also added a practice problem on each page with no solution. That's intentional. Have fun!
 		</p>
