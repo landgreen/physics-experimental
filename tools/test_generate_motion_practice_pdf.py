@@ -98,6 +98,14 @@ class PracticeQuestionTests(unittest.TestCase):
             heading = (PdfReader(pdf_path).pages[0].extract_text() or "").splitlines()[0]
             self.assertEqual(heading, "momentum conservation - practice problems")
 
+    def test_keeps_quantum_reference_table_out_of_the_printout_prompt(self) -> None:
+        quantum_page = next(page for page in practice_pages() if page.slug == "quantum")
+        prompt = next(question for question in quantum_page.questions if "n = 3 energy level" in question)
+
+        self.assertNotIn("table", prompt.lower())
+        self.assertNotIn("level energy", prompt.lower())
+        self.assertIn('<table class="printout-ignore">', quantum_page.source.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

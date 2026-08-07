@@ -50,16 +50,20 @@ class PracticeCardParser(HTMLParser):
         self.card_parts: list[str] | None = None
         self.card_depth = 0
         self.details_depth = 0
+        self.printout_ignore_depth = 0
         self.questions: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        classes = dict(attrs).get("class", "").split()
+        if self.card_parts is not None and (self.printout_ignore_depth or "printout-ignore" in classes):
+            self.printout_ignore_depth += 1
+            return
         if tag == "article":
             self.article_depth += 1
         elif tag == "h1" and self.article_depth:
             self.collecting_heading = True
             self.heading_parts = []
         elif tag == "div" and self.practice_article_depth == self.article_depth:
-            classes = dict(attrs).get("class", "").split()
             if self.card_parts is None and "example" in classes:
                 self.card_parts = []
                 self.card_depth = 1
@@ -69,6 +73,9 @@ class PracticeCardParser(HTMLParser):
             self.details_depth += 1
 
     def handle_endtag(self, tag: str) -> None:
+        if self.printout_ignore_depth:
+            self.printout_ignore_depth -= 1
+            return
         if tag == "h1" and self.collecting_heading:
             self.collecting_heading = False
             heading = " ".join(self.heading_parts).strip()
@@ -93,7 +100,7 @@ class PracticeCardParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self.collecting_heading:
             self.heading_parts.append(data)
-        if self.card_parts is not None and self.details_depth == 0:
+        if self.card_parts is not None and self.details_depth == 0 and self.printout_ignore_depth == 0:
             self.card_parts.append(data)
 
 
