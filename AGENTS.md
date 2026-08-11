@@ -6,11 +6,16 @@ This is a static physics course notes website. Most course content lives in `not
 
 ## Workflow
 
-- Make edits directly in the existing local `physics-experimental` checkout by default.
-- Do not create a separate branch or worktree unless the user explicitly requests one.
+- Make edits directly in the existing local `physics-experimental` directory.
 - Complete the requested edits and local verification without pausing for intermediate design, specification, plan, or review approval unless a necessary user decision blocks the work.
-- Include the user's current in-scope edits in the completed change, while excluding unrelated untracked or generated files.
-- When the work is ready, provide one concise summary and ask once for approval before the final commit and push to this repository's GitHub remote.
+- Preserve the user's existing work and exclude unrelated or generated files from the requested edits.
+- When the work is ready, provide one concise summary of the local changes and verification.
+
+## Git and GitHub
+
+- Do not run any Git commands or perform any Git operations in this repository, including status, diff, log, branch, worktree, staging, committing, pulling, merging, rebasing, tagging, or pushing.
+- Do not interact with GitHub for this repository through the website, CLI, apps, APIs, plugins, or other tools. Do not create or modify pull requests, issues, releases, Actions, repository settings, or remote content.
+- Limit all work to direct local file edits and non-Git local verification.
 
 ## Publishing
 
