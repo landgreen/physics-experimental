@@ -56,6 +56,7 @@ Show the equation, substitution, algebra if needed, final answer with units, and
 
 19. Keep Algebra to One Equal Sign Per Line
 For clarity, avoid multiple equal signs in one displayed equation line. Split chained work into separate lines, such as the formula, then the substitution, then the simplified value.
+In worked solutions, include units only when listing the initial conditions and stating the final answer. Omit units from intermediate numerical substitutions and algebraic calculation steps. Make sure the values use consistent units before substituting them.
 
 20. Limit Conceptual-Only Questions
 For calculation-heavy pages, use at most one or two conceptual-only questions, and only when they address an important misconception or interpretation.
