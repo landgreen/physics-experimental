@@ -1,107 +1,181 @@
 #!/usr/bin/env python3
-"""Create a printable, no-solutions worksheet from the Motion practice cards."""
+"""Create printable, no-solutions worksheets from the Practice cards on each notes page.
+
+Each worksheet is sized for double-sided printing: one sheet (2 pages) when the
+questions fit, otherwise two sheets (4 pages). Leftover space on every page is
+shared out as extra workspace so the pages come out full.
+
+To leave a card off the printout, add the class "printout-ignore" to its div:
+<div class='example printout-ignore'>. Elements inside a card can also use
+class="printout-ignore" (for example a reference table).
+"""
 
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
-from pathlib import Path
+import html
 import re
-from html.parser import HTMLParser
+from dataclasses import dataclass, field
+from io import StringIO
+from pathlib import Path
 
+from reportlab.graphics import renderPDF
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.utils import simpleSplit
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-
+from reportlab.platypus import Paragraph, Table, TableStyle
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PAGE = ROOT / "notes/motion/motion/index.html"
 DEFAULT_OUTPUT = ROOT / "output/pdf/motion-practice-questions.pdf"
-PAGE_WIDTH, PAGE_HEIGHT = letter
-LEFT_MARGIN = 0.65 * inch
-RIGHT_MARGIN = PAGE_WIDTH - 0.65 * inch
-BOTTOM_MARGIN = 0.65 * inch
-QUESTION_WIDTH = RIGHT_MARGIN - LEFT_MARGIN
-QUESTION_FONT_SIZE = 10.5
-QUESTION_LEADING = 14.5
-SPACE_LINE_HEIGHT = 14
-FIRST_PAGE_QUESTION_Y = PAGE_HEIGHT - 1.25 * inch
-LATER_PAGE_QUESTION_Y = PAGE_HEIGHT - 0.8 * inch
-TWO_COLUMN_GAP = 0.3 * inch
-TWO_COLUMN_WIDTH = (QUESTION_WIDTH - TWO_COLUMN_GAP) / 2
-UNITS_WORKSPACE_LINES = 4
-UNITS_QUESTIONS_PER_COLUMN = 5
 UNITS_SOURCE_PAGE = ROOT / "notes/review/units/index.html"
 WORKSHEET_TITLE_OVERRIDES = {
     ROOT / "notes/momentum/conservation/index.html": "Momentum Conservation",
 }
 
+PAGE_WIDTH, PAGE_HEIGHT = letter
+LEFT_MARGIN = 0.65 * inch
+RIGHT_MARGIN = PAGE_WIDTH - 0.65 * inch
+BOTTOM_MARGIN = 0.6 * inch
+CONTENT_WIDTH = RIGHT_MARGIN - LEFT_MARGIN
+FIRST_PAGE_TOP = PAGE_HEIGHT - 1.15 * inch
+LATER_PAGE_TOP = PAGE_HEIGHT - 0.6 * inch
+TWO_COLUMN_GAP = 0.3 * inch
+TWO_COLUMN_WIDTH = (CONTENT_WIDTH - TWO_COLUMN_GAP) / 2
 
-class PracticeCardParser(HTMLParser):
-    """Extract direct Example cards from the Practice article using only the standard library."""
+# Minimum blank workspace under each prompt, in points.
+EXAMPLE_WORKSPACE = 84
+QUESTION_WORKSPACE = 50
+UNITS_WORKSPACE = 44
+GAP_AFTER_PROMPT = 6
+DIAGRAM_WIDTH = 3.4 * inch
+DIAGRAM_MAX_HEIGHT = 1.8 * inch
+TARGET_PAGE_OPTIONS = (2, 4)
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.article_depth = 0
-        self.practice_article_depth: int | None = None
-        self.collecting_heading = False
-        self.heading_parts: list[str] = []
-        self.card_parts: list[str] | None = None
-        self.card_depth = 0
-        self.details_depth = 0
-        self.printout_ignore_depth = 0
-        self.questions: list[str] = []
+FONT = "Helvetica"
+BOLD_FONT = "Helvetica-Bold"
+for regular, bold in (
+    ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+    ("/Library/Fonts/Arial.ttf", "/Library/Fonts/Arial Bold.ttf"),
+):
+    if Path(regular).is_file() and Path(bold).is_file():
+        pdfmetrics.registerFont(TTFont("WorksheetFont", regular))
+        pdfmetrics.registerFont(TTFont("WorksheetFont-Bold", bold))
+        FONT, BOLD_FONT = "WorksheetFont", "WorksheetFont-Bold"
+        break
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        classes = dict(attrs).get("class", "").split()
-        if self.card_parts is not None and (self.printout_ignore_depth or "printout-ignore" in classes):
-            self.printout_ignore_depth += 1
-            return
-        if tag == "article":
-            self.article_depth += 1
-        elif tag == "h1" and self.article_depth:
-            self.collecting_heading = True
-            self.heading_parts = []
-        elif tag == "div" and self.practice_article_depth == self.article_depth:
-            if self.card_parts is None and "example" in classes:
-                self.card_parts = []
-                self.card_depth = 1
-            elif self.card_parts is not None:
-                self.card_depth += 1
-        elif tag == "details" and self.card_parts is not None:
-            self.details_depth += 1
+PROMPT_STYLE = ParagraphStyle("prompt", fontName=FONT, fontSize=10.5, leading=14.5)
 
-    def handle_endtag(self, tag: str) -> None:
-        if self.printout_ignore_depth:
-            self.printout_ignore_depth -= 1
-            return
-        if tag == "h1" and self.collecting_heading:
-            self.collecting_heading = False
-            heading = " ".join(self.heading_parts).strip()
-            if heading.startswith("Practice"):
-                self.practice_article_depth = self.article_depth
-        elif tag == "details" and self.card_parts is not None:
-            self.details_depth -= 1
-        elif tag == "div" and self.card_parts is not None:
-            self.card_depth -= 1
-            if self.card_depth == 0:
-                text = re.sub(r"\s+", " ", " ".join(self.card_parts)).strip()
-                if text.startswith("Example:"):
-                    self.questions.append(text.removeprefix("Example:").strip())
-                elif text.startswith("Question:"):
-                    self.questions.append(text.removeprefix("Question:").strip())
-                self.card_parts = None
-        elif tag == "article":
-            if self.practice_article_depth == self.article_depth:
-                self.practice_article_depth = None
-            self.article_depth -= 1
 
-    def handle_data(self, data: str) -> None:
-        if self.collecting_heading:
-            self.heading_parts.append(data)
-        if self.card_parts is not None and self.details_depth == 0 and self.printout_ignore_depth == 0:
-            self.card_parts.append(data)
+# --------------------------------------------------------------------------- parsing
+
+
+@dataclass
+class PracticeItem:
+    """One printable card: its prompt, plus any table or diagram the student needs."""
+
+    kind: str  # "Example" or "Question"
+    text: str  # plain text of the prompt
+    markup: str  # the prompt with <super>/<sub> tags for reportlab
+    tables: list[list[list[str]]] = field(default_factory=list)
+    svg: str | None = None
+
+
+def _strip_tags(fragment: str) -> str:
+    return html.unescape(re.sub(r"<[^>]+>", " ", fragment))
+
+
+def _clean(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _prompt_markup(fragment: str) -> str:
+    """Convert a card's HTML prompt into reportlab paragraph markup."""
+
+    fragment = re.sub(r"<sup>(.*?)</sup>", lambda m: "\x01" + _strip_tags(m.group(1)) + "\x02", fragment, flags=re.S)
+    fragment = re.sub(r"<sub>(.*?)</sub>", lambda m: "\x03" + _strip_tags(m.group(1)) + "\x04", fragment, flags=re.S)
+    text = _clean(_strip_tags(fragment))
+    text = html.escape(text, quote=False)
+    text = text.replace("\x01", "<super>").replace("\x02", "</super>")
+    text = text.replace("\x03", "<sub>").replace("\x04", "</sub>")
+    return text
+
+
+def _practice_section(page_html: str) -> str | None:
+    """Return the HTML that holds a page's practice cards.
+
+    Final-layout pages keep everything inside <details class="practice-menu">.
+    Older pages start the section with an <h1>Practice</h1> heading.
+    """
+
+    menu = re.search(r"<details[^>]*class=['\"][^'\"]*\bpractice-menu\b[^'\"]*['\"][^>]*>", page_html)
+    if menu is not None:
+        article_end = page_html.find("</article>", menu.end())
+        article_end = article_end if article_end != -1 else len(page_html)
+        menu_end = page_html.rfind("</details>", menu.end(), article_end)
+        return page_html[menu.end(): menu_end if menu_end != -1 else article_end]
+    match = re.search(r"<h1[^>]*>\s*Practice\b", page_html)
+    if match is None:
+        return None
+    end = page_html.find("</article>", match.end())
+    return page_html[match.end(): end if end != -1 else len(page_html)]
+
+
+def practice_items(source_page: Path = SOURCE_PAGE) -> list[PracticeItem]:
+    """Return the printable practice cards on a notes page, in order."""
+
+    section = _practice_section(source_page.read_text(encoding="utf-8"))
+    if section is None:
+        raise ValueError(f"No Practice section was found in {source_page}.")
+    starts = [m.start() for m in re.finditer(r"<div class=['\"][^'\"]*\bexample\b[^'\"]*['\"]", section)]
+    items: list[PracticeItem] = []
+    for index, start in enumerate(starts):
+        card = section[start: starts[index + 1] if index + 1 < len(starts) else len(section)]
+        opening = card[: card.index(">") + 1]
+        if "printout-ignore" in opening:
+            continue
+        card = card[len(opening):]
+        card = re.sub(r"<details.*?</details>", " ", card, flags=re.S)
+        card = re.sub(r"<(\w+)[^>]*class=['\"][^'\"]*printout-ignore[^'\"]*['\"][^>]*>.*?</\1>", " ", card, flags=re.S)
+        card = re.sub(r"<script.*?</script>", " ", card, flags=re.S)
+        svg_match = re.search(r"<svg.*?</svg>", card, flags=re.S)
+        svg = svg_match.group(0) if svg_match else None
+        card = re.sub(r"<svg.*?</svg>", " ", card, flags=re.S)
+        tables = []
+        for table_html in re.findall(r"<table.*?</table>", card, flags=re.S):
+            rows = []
+            for row_html in re.findall(r"<tr.*?</tr>", table_html, flags=re.S):
+                cells = [_prompt_markup(cell) for cell in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", row_html, flags=re.S)]
+                if cells:
+                    rows.append(cells)
+            if rows:
+                tables.append(rows)
+        card = re.sub(r"<table.*?</table>", " ", card, flags=re.S)
+        label = re.search(r"<strong>\s*(Example|Question)\s*:?\s*</strong>\s*:?", card)
+        if label is None:
+            continue  # Reading cards and other non-question cards
+        prompt_html = card[label.end():]
+        prompt_html = re.sub(r"</div>\s*$", "", prompt_html.strip())
+        markup = _prompt_markup(prompt_html)
+        if svg:
+            markup = markup.replace("the circuit above", "the circuit below").replace("the diagram above", "the diagram below")
+        text = _clean(re.sub(r"<[^>]+>", "", markup.replace("<super>", "^")))
+        if not text:
+            continue
+        items.append(PracticeItem(label.group(1), html.unescape(text), markup, tables, svg))
+    if not items:
+        raise ValueError(f"No practice questions were found in {source_page}.")
+    return items
+
+
+def practice_questions(source_page: Path = SOURCE_PAGE) -> list[str]:
+    """Return the plain-text prompts of the printable practice cards."""
+
+    return [item.text for item in practice_items(source_page)]
 
 
 @dataclass(frozen=True)
@@ -112,16 +186,6 @@ class PracticePage:
     title: str
     slug: str
     questions: tuple[str, ...]
-
-
-def practice_questions(source_page: Path = SOURCE_PAGE) -> list[str]:
-    """Return direct practice-card prompts, excluding solutions and Reading cards."""
-
-    parser = PracticeCardParser()
-    parser.feed(source_page.read_text(encoding="utf-8"))
-    if not parser.questions:
-        raise ValueError(f"No practice questions were found in {source_page}.")
-    return parser.questions
 
 
 def page_title(source_page: Path) -> str:
@@ -154,204 +218,229 @@ def practice_pages() -> list[PracticePage]:
         slug = leaf_name
         if leaf_counts[leaf_name] > 1:
             slug = f"{source_page.parent.parent.name}-{leaf_name}"
-        pages.append(
-            PracticePage(
-                source=source_page,
-                title=page_title(source_page),
-                slug=slug,
-                questions=questions,
-            )
-        )
+        pages.append(PracticePage(source_page, page_title(source_page), slug, questions))
     return pages
 
 
-def workspace_line_count(question: str) -> int:
-    """Give longer prompts slightly more workspace while keeping the worksheet compact."""
-
-    if len(question) > 300:
-        return 8
-    if len(question) > 190:
-        return 6
-    return 5
+# --------------------------------------------------------------------------- building blocks
 
 
-def question_block_height(question: str, number: int, extra_lines: int) -> float:
-    """Return the vertical space used by one question and its blank workspace."""
+def _svg_drawing(svg: str, width: float):
+    """Turn an inline SVG diagram into a scaled reportlab drawing."""
 
-    wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, QUESTION_WIDTH)
-    workspace_height = (workspace_line_count(question) + extra_lines) * SPACE_LINE_HEIGHT
-    return (len(wrapped_question) * QUESTION_LEADING) + 14 + workspace_height + 18
+    from svglib.svglib import svg2rlg
 
-
-def two_column_question_height(question: str, number: int) -> float:
-    """Return the space for a compact Unit-conversion question and its workspace."""
-
-    wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, TWO_COLUMN_WIDTH)
-    workspace_height = UNITS_WORKSPACE_LINES * SPACE_LINE_HEIGHT
-    return (len(wrapped_question) * QUESTION_LEADING) + 14 + workspace_height + 18
-
-
-def page_count(questions: list[str], extra_lines: int | list[int]) -> int:
-    """Calculate the page count for a title page and later pages with shared margins."""
-
-    if isinstance(extra_lines, int):
-        workspace_extras = [extra_lines] * len(questions)
-    else:
-        if len(extra_lines) != len(questions):
-            raise ValueError("Each question needs one workspace-line count.")
-        workspace_extras = extra_lines
-
-    pages = 1
-    y = FIRST_PAGE_QUESTION_Y
-    for number, (question, workspace_extra) in enumerate(zip(questions, workspace_extras), start=1):
-        block_height = question_block_height(question, number, workspace_extra)
-        if y - block_height < BOTTOM_MARGIN:
-            pages += 1
-            y = LATER_PAGE_QUESTION_Y
-        y -= block_height
-    return pages
+    svg = re.sub(r"\son\w+=(\"[^\"]*\"|'[^']*')", "", svg)  # drop mouseover scripts
+    svg = re.sub(r"<g[^>]*fade-volts.*?</g>", "", svg, flags=re.S)  # drop hidden hover overlays
+    svg = svg.replace("'", '"')
+    svg = re.sub(r"\s+<tspan", "<tspan", svg)  # svglib turns the line break before a subscript into a gap
+    if "xmlns=" not in svg:
+        svg = svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"', 1)
+    drawing = svg2rlg(StringIO(svg))
+    if drawing is None:
+        return None
+    scale = min(width / drawing.width, DIAGRAM_MAX_HEIGHT / drawing.height)
+    drawing.width *= scale
+    drawing.height *= scale
+    drawing.scale(scale, scale)
+    return drawing
 
 
-def choose_workspace_extra_lines(questions: list[str]) -> int:
-    """Maximize evenly distributed workspace without adding another sheet side."""
+@dataclass
+class Block:
+    """A laid-out question: a list of (flowable, height, x offset) plus its workspace."""
 
-    target_pages = page_count(questions, extra_lines=0)
-    if target_pages % 2:
-        target_pages += 1
-    fitting_extras = [
-        extra_lines
-        for extra_lines in range(9)
-        if page_count(questions, extra_lines) == target_pages
-    ]
-    return max(fitting_extras, default=0)
+    parts: list
+    content_height: float
+    workspace: float
 
-
-def workspace_extra_lines(questions: list[str]) -> list[int]:
-    """Balance workspace across an even number of printable pages when possible."""
-
-    target_pages = page_count(questions, extra_lines=0)
-    if target_pages % 2:
-        target_pages += 1
-
-    extras = [choose_workspace_extra_lines(questions)] * len(questions)
-    next_question = 0
-    while True:
-        fitting_question: int | None = None
-        for offset in range(len(questions)):
-            question_index = (next_question + offset) % len(questions)
-            candidate = extras.copy()
-            candidate[question_index] += 1
-            if page_count(questions, candidate) <= target_pages:
-                fitting_question = question_index
-                break
-        if fitting_question is None:
-            return extras
-        extras[fitting_question] += 1
-        next_question = (fitting_question + 1) % len(questions)
+    @property
+    def height(self) -> float:
+        return self.content_height + GAP_AFTER_PROMPT + self.workspace
 
 
-def draw_column_divider(canvas: Canvas, top: float) -> None:
-    """Draw a quiet center rule beneath a two-column worksheet's title area."""
+def build_block(item: PracticeItem, number: int, width: float, workspace: float) -> Block:
+    """Stack the prompt, any tables, and any diagram. Each part is (flowable, height, x offset, gap after)."""
 
-    canvas.setLineWidth(0.5)
-    canvas.setStrokeColorRGB(0.65, 0.65, 0.65)
-    canvas.line(PAGE_WIDTH / 2, BOTTOM_MARGIN, PAGE_WIDTH / 2, top)
-    canvas.setStrokeColorRGB(0, 0, 0)
+    parts = []
+    paragraph = Paragraph(f"<b>{number}.</b> {item.markup}", PROMPT_STYLE)
+    _, height = paragraph.wrap(width, PAGE_HEIGHT)
+    parts.append((paragraph, height, 0, 0))
+    for rows in item.tables:
+        cells = [[Paragraph(cell, PROMPT_STYLE) for cell in row] for row in rows]
+        column_count = max(len(row) for row in rows)
+        cells = [row + [""] * (column_count - len(row)) for row in cells]
+        column_width = min(1.3 * inch, (width - 0.3 * inch) / column_count)
+        table = Table(cells, colWidths=[column_width] * column_count)
+        table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ]))
+        _, table_height = table.wrap(width, PAGE_HEIGHT)
+        parts[-1] = parts[-1][:3] + (6,)
+        parts.append((table, table_height, 0.2 * inch, 0))
+    if item.svg:
+        drawing = _svg_drawing(item.svg, min(DIAGRAM_WIDTH, width))
+        if drawing is not None:
+            parts[-1] = parts[-1][:3] + (6,)
+            parts.append((drawing, drawing.height, (width - drawing.width) / 2, 0))
+    content = sum(height + gap for _, height, _, gap in parts)
+    return Block(parts, content, workspace)
 
 
-def draw_units_column(
-    canvas: Canvas,
-    entries: list[tuple[int, str]],
-    x_position: float,
-    top: float,
-) -> None:
-    """Draw one evenly spaced Units column from its top to the bottom margin."""
-
-    heights = [two_column_question_height(question, number) for number, question in entries]
-    available_height = top - BOTTOM_MARGIN
-    if sum(heights) > available_height:
-        raise ValueError("Units column does not fit on the page.")
-    extra_space = (available_height - sum(heights)) / len(entries)
+def draw_block(canvas: Canvas, block: Block, x: float, top: float) -> None:
     y = top
-
-    for (number, question), required_height in zip(entries, heights):
-        wrapped_question = simpleSplit(
-            f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, TWO_COLUMN_WIDTH
-        )
-        canvas.setFont("Helvetica", QUESTION_FONT_SIZE)
-        for line in wrapped_question:
-            canvas.drawString(x_position, y, line)
-            y -= QUESTION_LEADING
-        y -= required_height - (len(wrapped_question) * QUESTION_LEADING) + extra_space
+    for flowable, height, x_offset, gap in block.parts:
+        if isinstance(flowable, (Paragraph, Table)):
+            flowable.drawOn(canvas, x + x_offset, y - height)
+        else:
+            renderPDF.draw(flowable, canvas, x + x_offset, y - height)
+        y -= height + gap
 
 
-def build_units_two_column_pdf(canvas: Canvas, questions: list[str]) -> None:
-    """Lay out Units prompts in balanced two-column pages with evenly shared workspace."""
+def minimum_workspace(item: PracticeItem) -> float:
+    return QUESTION_WORKSPACE if item.kind == "Question" else EXAMPLE_WORKSPACE
 
-    entries = list(enumerate(questions, start=1))
-    columns = [
-        entries[index:index + UNITS_QUESTIONS_PER_COLUMN]
-        for index in range(0, len(entries), UNITS_QUESTIONS_PER_COLUMN)
-    ]
-    page_number = 0
-    while columns:
-        left_column = columns.pop(0)
-        right_column = columns.pop(0) if columns else []
-        if not right_column and len(left_column) > 1:
-            split_index = (len(left_column) + 1) // 2
-            right_column = left_column[split_index:]
-            left_column = left_column[:split_index]
 
-        top = FIRST_PAGE_QUESTION_Y if page_number == 0 else LATER_PAGE_QUESTION_Y
-        draw_column_divider(canvas, top)
-        draw_units_column(canvas, left_column, LEFT_MARGIN, top)
-        if right_column:
-            right_x_position = LEFT_MARGIN + TWO_COLUMN_WIDTH + TWO_COLUMN_GAP
-            draw_units_column(canvas, right_column, right_x_position, top)
+def paginate(blocks: list[Block]) -> list[list[int]]:
+    """Greedily assign blocks to pages, keeping each block on one page."""
 
-        page_number += 1
-        if columns:
+    pages: list[list[int]] = [[]]
+    remaining = FIRST_PAGE_TOP - BOTTOM_MARGIN
+    for index, block in enumerate(blocks):
+        if block.height > remaining and pages[-1]:
+            pages.append([])
+            remaining = LATER_PAGE_TOP - BOTTOM_MARGIN
+        pages[-1].append(index)
+        remaining -= block.height
+    return pages
+
+
+def layout(items: list[PracticeItem], width: float = CONTENT_WIDTH) -> list[list[Block]]:
+    """Choose a 2 or 4 page target and share the free space as workspace."""
+
+    blocks = [build_block(item, n, width, minimum_workspace(item)) for n, item in enumerate(items, start=1)]
+    base_pages = len(paginate(blocks))
+    target = next((t for t in TARGET_PAGE_OPTIONS if base_pages <= t), base_pages + base_pages % 2)
+
+    # Add the same extra workspace to every block, as much as still fits in the target.
+    low, high = 0.0, 400.0
+    for _ in range(40):
+        middle = (low + high) / 2
+        trial = [Block(b.parts, b.content_height, b.workspace + middle) for b in blocks]
+        if len(paginate(trial)) <= target:
+            low = middle
+        else:
+            high = middle
+    blocks = [Block(b.parts, b.content_height, b.workspace + low) for b in blocks]
+
+    # Share each page's leftover space among the blocks on that page.
+    pages = paginate(blocks)
+    laid_out = []
+    for page_number, indices in enumerate(pages):
+        top = FIRST_PAGE_TOP if page_number == 0 else LATER_PAGE_TOP
+        leftover = (top - BOTTOM_MARGIN) - sum(blocks[i].height for i in indices)
+        share = max(leftover, 0) / len(indices)
+        laid_out.append([Block(blocks[i].parts, blocks[i].content_height, blocks[i].workspace + share) for i in indices])
+    return laid_out
+
+
+def page_count(questions_or_items, extra_lines=None) -> int:
+    """Number of printed pages a worksheet uses."""
+
+    items = questions_or_items
+    if items and isinstance(items[0], str):
+        items = [PracticeItem("Example", q, html.escape(q, quote=False)) for q in items]
+    return len(layout(list(items)))
+
+
+# --------------------------------------------------------------------------- drawing
+
+
+def draw_footer(canvas: Canvas, page_number: int, total: int) -> None:
+    canvas.setFont(FONT, 8)
+    canvas.setFillColor(colors.grey)
+    canvas.drawRightString(RIGHT_MARGIN, 0.35 * inch, f"page {page_number} of {total}")
+    canvas.setFillColor(colors.black)
+
+
+def build_units_two_column_pdf(canvas: Canvas, items: list[PracticeItem], title: str) -> int:
+    """Short Units prompts fit best in two columns."""
+
+    blocks = [build_block(item, n, TWO_COLUMN_WIDTH, UNITS_WORKSPACE) for n, item in enumerate(items, start=1)]
+    # fill columns top to bottom, then share the leftover space in each column
+    columns: list[list[Block]] = [[]]
+    remaining = FIRST_PAGE_TOP - BOTTOM_MARGIN
+    for block in blocks:
+        if block.height > remaining and columns[-1]:
+            columns.append([])
+            page_index = len(columns) // 2 + len(columns) % 2 - 1
+            remaining = (FIRST_PAGE_TOP if page_index == 0 else LATER_PAGE_TOP) - BOTTOM_MARGIN
+        columns[-1].append(block)
+        remaining -= block.height
+    if len(columns) % 2:
+        columns.append([])
+    total = len(columns) // 2
+    if total % 2:
+        total += 1
+    for page_number in range(total):
+        top = FIRST_PAGE_TOP if page_number == 0 else LATER_PAGE_TOP
+        for side in range(2):
+            index = page_number * 2 + side
+            column = columns[index] if index < len(columns) else []
+            if not column:
+                continue
+            leftover = (top - BOTTOM_MARGIN) - sum(b.height for b in column)
+            share = max(leftover, 0) / len(column)
+            x = LEFT_MARGIN + side * (TWO_COLUMN_WIDTH + TWO_COLUMN_GAP)
+            y = top
+            for block in column:
+                draw_block(canvas, block, x, y)
+                y -= block.height + share
+        canvas.setStrokeColor(colors.lightgrey)
+        canvas.setLineWidth(0.5)
+        canvas.line(PAGE_WIDTH / 2, BOTTOM_MARGIN, PAGE_WIDTH / 2, top)
+        canvas.setStrokeColor(colors.black)
+        draw_footer(canvas, page_number + 1, total)
+        if page_number + 1 < total:
             canvas.showPage()
+    return total
 
 
-def build_pdf(
-    output_path: Path,
-    source_page: Path = SOURCE_PAGE,
-    title: str | None = None,
-) -> int:
-    """Create one printable, questions-only worksheet for a notes Practice section."""
+def build_pdf(output_path: Path, source_page: Path = SOURCE_PAGE, title: str | None = None) -> int:
+    """Create one printable, questions-only worksheet. Returns the number of questions."""
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas = Canvas(str(output_path), pagesize=letter)
     lesson_title = WORKSHEET_TITLE_OVERRIDES.get(source_page, title or page_title(source_page))
     canvas.setTitle(f"{lesson_title} Practice Questions")
     canvas.setAuthor("Physics Notes")
-    questions = practice_questions(source_page)
-    canvas.setFont("Helvetica", 15)
-    canvas.drawString(LEFT_MARGIN, PAGE_HEIGHT - 0.9 * inch, f"{lesson_title.lower()} - practice problems")
+    items = practice_items(source_page)
+
+    canvas.setFont(FONT, 15)
+    canvas.drawString(LEFT_MARGIN, PAGE_HEIGHT - 0.8 * inch, f"{lesson_title.lower()} - practice problems")
+    canvas.setFont(FONT, 10)
+    canvas.drawRightString(RIGHT_MARGIN, PAGE_HEIGHT - 0.8 * inch, "name ______________________")
 
     if source_page == UNITS_SOURCE_PAGE:
-        build_units_two_column_pdf(canvas, questions)
+        build_units_two_column_pdf(canvas, items, lesson_title)
         canvas.save()
-        return len(questions)
+        return len(items)
 
-    extra_lines = workspace_extra_lines(questions)
-    y = FIRST_PAGE_QUESTION_Y
-    for number, (question, workspace_extra) in enumerate(zip(questions, extra_lines), start=1):
-        wrapped_question = simpleSplit(f"{number}. {question}", "Helvetica", QUESTION_FONT_SIZE, QUESTION_WIDTH)
-        required_height = question_block_height(question, number, workspace_extra)
-        if y - required_height < BOTTOM_MARGIN:
+    pages = layout(items)
+    total = len(pages)
+    for page_number, page in enumerate(pages):
+        y = FIRST_PAGE_TOP if page_number == 0 else LATER_PAGE_TOP
+        for block in page:
+            draw_block(canvas, block, LEFT_MARGIN, y)
+            y -= block.height
+        draw_footer(canvas, page_number + 1, total)
+        if page_number + 1 < total:
             canvas.showPage()
-            y = LATER_PAGE_QUESTION_Y
-
-        canvas.setFont("Helvetica", QUESTION_FONT_SIZE)
-        for line in wrapped_question:
-            canvas.drawString(LEFT_MARGIN, y, line)
-            y -= QUESTION_LEADING
-        y -= 14 + ((workspace_line_count(question) + workspace_extra) * SPACE_LINE_HEIGHT) + 18
-
     canvas.save()
-    return len(questions)
+    return len(items)
 
 
 def build_all_pdfs(output_directory: Path = ROOT / "output/pdf") -> dict[str, int]:

@@ -1,0 +1,26 @@
+
+
+https://github.com/landgreen/physics/issues
+
+
+done _______________________________________________
+
+have opus Review practice problems
+   check for accuracy
+
+
+
+todo _______________________________________________
+
+?add links to google doc worksheets on each page?
+
+practice problems
+   hide practice problems behind details menu
+   add optional hints
+   add checkbox for what topic
+      style?
+   check if AI can make graphics
+      free body diagrams?
+      circuit diagrams?
+      
+

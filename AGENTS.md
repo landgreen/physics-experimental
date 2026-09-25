@@ -74,9 +74,12 @@ Use `practice-question-quality-steps.txt` as the detailed source of truth when c
 - It should use the `Example:` label because it should initially look like a normal math problem.
 - It should include at least two given numbers, but still be missing one required value, assumption, or taught equation.
 - Mix it into the practice set instead of placing it last.
+- Build it from a real object with a real missing value, not an invented unit or artificial setup.
 - Keep the answer constructive: explain what information is missing or what equation has not been taught, so students practice recognizing when a physics problem cannot be solved from the given information.
 
 ### Labels and Solution Style
+
+- Give each practice card `data-topic="<page section>"`, and add `data-hard` for trig, 2-D, complex-circuit, or long multi-step problems (see step 26 of the quality steps). Use `class='example printout-ignore'` to leave a card off the printout PDF.
 
 - Use `Example:` for math problems.
 - Use `Question:` for non-math conceptual problems.
@@ -84,11 +87,15 @@ Use `practice-question-quality-steps.txt` as the detailed source of truth when c
 - For calculation-heavy pages, include at most one or two conceptual-only questions unless the user asks for more.
 - Solutions should show the equation, substitution, algebra if needed, final answer with units, and a short interpretation when useful.
 - Keep algebra to one equal sign per line. Do not chain multiple equal signs across one displayed line.
+- Match the page's solution method, not just its notation, such as the decimal-moving method for metric prefixes or colored cancelling units in conversion fractions.
+- Conversion factors always show their units, even though other intermediate steps omit units.
+- For trig, write the degree sign, state what the angle is measured from, and remind students about calculator degree mode in the first trig solution of a set.
 - Check formulas, substitutions, arithmetic, units, signs, assumptions, and physical reasonableness for every solution.
+- Check that every given value is believable for the object in the prompt, and that multi-part data agree with each other.
 - For multi-step or realistic-number problems, verify rounded answers independently.
 
 ### Final Quality Check
 
 - Confirm the set practices every major equation, important rearrangement, common mistake, and major representation taught on the page.
-- Review for repetition and near-duplicates. Different numbers alone do not make a different problem.
+- Review for repetition and near-duplicates. Different numbers alone do not make a different problem. Also compare against the worked examples already on the page.
 - Rewrite prompts until they sound like the existing notes: plain, direct, readable, and useful rather than generic worksheet filler.

@@ -1,10 +1,10 @@
 Practice Question Quality Steps
 
 1. Read the Page Like a Teacher
-Identify the equations, concepts, assumptions, example style, vocabulary, and expected math level already taught on the page.
+Identify the equations, concepts, assumptions, example style, vocabulary, and expected math level already taught on the page. Note the page's sign conventions, such as which direction Q and W are positive. If the page's own teaching text contradicts itself, write the practice to match the page's main definition and report the contradiction to the teacher instead of silently picking one.
 
 2. Define the Learning Boundary
-Only write problems that can be solved using the page content or clearly expected prerequisites. Do not introduce new formulas or techniques.
+Only write problems that can be solved using the page content or clearly expected prerequisites. Do not introduce new formulas or techniques. Check which page first teaches each equation. For example, F_g = mg is taught on the forces page, so it can't be used on the Newton's laws page that comes before it.
 
 3. Check That It Can Be Solved From the Page
 Verify that the page teaches the needed equation, symbols, units, assumptions, and algebra style. If a student would need outside content, simplify or move the problem.
@@ -34,7 +34,7 @@ Prefer prompts that require students to identify the model before calculating. A
 Each problem should have a purpose, such as practicing a rearrangement, checking units, using signs, identifying net force, interpreting a graph, or addressing a misconception.
 
 12. Mix Representations
-Where the page supports it, include problems based on words, equations, tables, graphs, diagrams, before/after descriptions, comparisons, or simple sketches.
+Where the page supports it, include problems based on words, equations, tables, graphs, diagrams, before/after descriptions, comparisons, or simple sketches. New SVG diagrams should reuse the drawing conventions already on the page (for circuits: 80 px zigzag resistors, gray R labels, dark value labels, and the same battery symbol; for free body diagrams: the brown #964 block with its mass in white, arrows starting at the block's edges, labels like F_N, F_g, F_s written as F with a small tspan subscript, and equal forces drawn the same length). Do not add mouseover or hover voltage overlays to practice circuit diagrams. Always render a new diagram in a browser and look at it before finishing, checking that paths connect at every junction and that labels sit beside the right component without overlapping.
 
 13. Choose Numbers Intentionally
 Use clean numbers early and more realistic numbers later. Avoid arithmetic that distracts from the physics unless that difficulty is intentional.
@@ -49,26 +49,36 @@ Aim for about one out of every four problems to require one or two reasonable un
 State required assumptions in the prompt or solution, such as ignore air resistance, constant acceleration, level surface, ideal battery, point charges, or uniform field.
 
 17. Include One Deliberately Unsolvable Problem
-Add exactly one intentionally unsolvable problem per page. It should look like a normal math problem at first, use the Example label, and include at least two given numbers, but it must still be missing one required value, assumption, or taught equation. Mix it into the practice set instead of placing it last. Keep the prompt focused, and make the answer explain what information is missing or what equation has not been taught, so students practice recognizing when a physics problem cannot be solved from the given information.
+Add exactly one intentionally unsolvable problem per page. It should look like a normal math problem at first, use the Example label, and include at least two given numbers, but it must still be missing one required value, assumption, or taught equation. Build it from a real object or situation that fits the page, with a real missing value, such as a bike wheel's size or a starting position. Avoid invented units or artificial setups that make the problem obviously broken. Mix it into the practice set instead of placing it last. Keep the prompt focused, and make the answer explain what information is missing or what equation has not been taught, so students practice recognizing when a physics problem cannot be solved from the given information.
 
 18. Write Solutions in the Existing Style
-Show the equation, substitution, algebra if needed, final answer with units, and a short interpretation when useful. Use Example for math problems and Question for non-math conceptual prompts. In expandable details, use answer as the summary title for Question prompts and solution as the summary title for Example prompts. Keep the prompt readable with normal text or HTML notation when that fits the page, and reserve LaTeX for the solution. Use display math with double-dollar delimiters.
+Show the equation, substitution, algebra if needed, final answer with units, and a short interpretation when useful. Match the page's solution method, not just its notation. If the page teaches a specific method, such as moving the decimal for metric prefixes or colored cancelling units in conversion fractions, the practice solutions should use that same method. Use the course's notation for earlier content too. For example, kinematics on a later page still uses u, v, and Δt from the kinematics page, not v₀ and t. Use Example for math problems and Question for non-math conceptual prompts. In expandable details, use answer as the summary title for Question prompts and solution as the summary title for Example prompts. Keep the prompt readable with normal text or HTML notation when that fits the page, and reserve LaTeX for the solution. Use display math with double-dollar delimiters. Only put solutions side by side in columns when every line is short. Long fractions or long decimals overflow a half-width column, so stack them instead, and render the page to check.
 
 19. Keep Algebra to One Equal Sign Per Line
 For clarity, avoid multiple equal signs in one displayed equation line. Split chained work into separate lines, such as the formula, then the substitution, then the simplified value.
 In worked solutions, include units only when listing the initial conditions and stating the final answer. Omit units from intermediate numerical substitutions and algebraic calculation steps. Make sure the values use consistent units before substituting them.
+Exception: conversion factors always show their units, such as (1000 m / 1 km) or (1 hr / 3600 s). The units are what make a conversion fraction work, so students need to see which units cancel. Never write a conversion as a bare equation between numbers, such as 72 = 20, because the equation is false without its units.
 
 20. Limit Conceptual-Only Questions
 For calculation-heavy pages, use at most one or two conceptual-only questions, and only when they address an important misconception or interpretation.
 
 21. Review Repetition and Near-Duplicates
 Vary the unknown variable, context, equation form, sign convention, units, difficulty, and solution path. Flag problems with the same sentence structure, same unknown, same context, same solution path, or same underlying problem shape. Different numbers alone do not make a new problem.
+Also compare the practice set against the worked examples already on the page. A practice problem that repeats a page example with new numbers, or a scaled version of it (such as 6-8-10 after a 3-4-5 example), is a near-duplicate.
 
 22. Check Coverage
 Confirm the set practices every major equation, important rearrangement, common mistake, and major representation taught on the page.
 
 23. Validate Physics and Math
 Check formulas, substitutions, arithmetic, units, signs, assumptions, and physical reasonableness for every solution. For multi-step or realistic-number problems, verify rounded answers with an independent calculation.
+Check that every given value makes sense for the object in the prompt. Ask "is this a believable size, speed, or time for this thing?" A realistic-sounding context with an unrealistic number, such as an 8 m lab table, a 12 ms camera flash, or a train "backing up slowly" at 43 km/h, teaches wrong intuition.
+For multi-part data, check that the given values agree with each other, such as an average velocity that fits the starting and ending velocities. For collisions, check that the total kinetic energy after the collision is not larger than before, unless the problem is an explosion or a spring pushing objects apart. This matters even on pages that come before energy is taught, because impossible numbers still teach wrong intuition. Also check that objects can't pass through each other, for example a back cart ending up faster than the cart in front of it.
 
-24. Match the Page's Teacher Voice
+24. Trig Conventions
+Write angles with the degree sign in solutions, such as sin(30°). In the first trig solution of a practice set, remind students to set their calculator to degree mode. State what the angle is measured from, such as above the horizontal or north of west.
+
+25. Match the Page's Teacher Voice
 Rewrite prompts so they sound like the existing notes: plain, direct, readable, and useful rather than generic worksheet filler.
+
+26. Topic and Difficulty Tags
+Give every practice card a data-topic attribute that names the page section it practices, using the page's own section headings when possible, for example <div class='example' data-topic="Velocity">. Add data-hard to harder problems: anything that needs trig (not counting angles of 0°, 90°, or 180°), 2-D motion, complex circuits, or long multi-step solutions. Conceptual Questions do not get data-hard. The page script lib/practice-labels.js turns these into optional tags. To leave a card off the printout PDF, add printout-ignore to its class.
