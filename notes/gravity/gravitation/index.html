@@ -256,10 +256,10 @@
                 <summary>answer</summary>
                 <p>
                     At the time it wasn't clear what model was the best one, but the heliocentric model explained the world in a more elegant and simple way.
-                    Issues like retrograde motion of planets was explained naturally in the heliocentric model without the need for epicycles.
+                    Issues like retrograde motion of planets were explained naturally in the heliocentric model without the need for epicycles.
                 </p>
                 <p>
-                    One of the reasons Galileo liked the heliocentric model was that he had observed the Venus went through phases, just like the moon.
+                    One of the reasons Galileo liked the heliocentric model was that he had observed Venus went through phases, just like the moon.
                     In the Ptolemaic model, where Venus orbits the Earth, it wouldn't go through the full cycle of phases.
                 </p>
                 <p>
@@ -326,7 +326,7 @@
         <p>
             Kepler's laws mostly agreed with the Copernican model, but with a few improvements.
             In Kepler's <a href="http://galileoandeinstein.phys.virginia.edu/more_stuff/Applets/Kepler/kepler.html">model</a> orbits moved in an ellipse, not a circle.
-            The Sun wasn't the center of a planetary orbit, it was a foci of an elliptical orbit.
+            The Sun wasn't the center of a planetary orbit, it was a focus of an elliptical orbit.
             Also, the planets would speed up and slow down as they orbited.
         </p>
         <div class="example-small">
@@ -354,8 +354,8 @@
             <details>
                 <summary>modified equation for units of meters and seconds</summary>
                 $$T^2 = \frac{4 \pi^2}{GM} r^3$$
-                <p>\(T\) = orbital period, total time for one orbit [yr, years]
-                    <br>\(r\) = semi-major axis [AU, astronomical units, 1.5 × 10<sup>11</sup> meters]
+                <p>\(T\) = orbital period, total time for one orbit [s, seconds]
+                    <br>\(r\) = semi-major axis [m, meters]
                     <br>\(M\) = Mass of central body [kg, kilograms]
                     <br>\(G\) = 6.67408 × 10<sup>-11</sup> = universal gravitation constant [N m²/kg²]
                 </p>
@@ -550,7 +550,7 @@
         </div>
         <p>
             Universal gravitation improved on Kepler's laws of planetary motion because it had a more universal application.
-            Kepler's laws only applied to orbits where one body was much more massive, like the Sun and it's planets.
+            Kepler's laws only applied to orbits where one body was much more massive, like the Sun and its planets.
             Newton's gravitation applied to all matter.
         </p>
         <!-- General relativity views gravity as a consequence of warped spacetime -->
@@ -803,7 +803,7 @@
                 <summary>answer</summary>
                 <p>
                     The force of gravity scales with distance and mass.
-                    The Earth is very close and very massive, so it's gravity is large enough to feel.
+                    The Earth is very close and very massive, so its gravity is large enough to feel.
                 </p>
                 <p>
                     The force of gravity is very weak though.
@@ -1100,7 +1100,7 @@
                 </p>
                 <p>
                     When matter gets very dense, a black hole forms.
-                    Understanding gravity at distances near zero require using general relativity and quantum physics at the same time.
+                    Understanding gravity at distances near zero requires using general relativity and quantum physics at the same time.
                     Currently these two theories are not compatible, but we know that some strange things would happen.
                     Time would slow down, and it would become very difficult for anything to escape.
                 </p>
@@ -1395,7 +1395,7 @@
         </div>
         <div class='example'>
             <strong>Questions:</strong>
-            Imagine you could to dig into the center of the Earth.
+            Imagine you could dig into the center of the Earth.
             How would the acceleration of gravity change as you went deeper?
             Would it increase, decrease, or stay the same?
             <details>
@@ -1636,23 +1636,21 @@
 
         <p id='gpe' class='underlined'> Gravitational Potential Energy</p>
         <p>
-            Our old gravitational potential energy equation, <a href="..\..\energy\energy\index.html#potential">U=mgh,</a> can be made more accurate if we replace g = 9.8 with
-            a calculated gravitational acceleration. This version of gravitational potential energy now works beyond Earth's surface.
+            Our old gravitational potential energy equation, <a href="..\..\energy\energy\index.html#potential">U=mgh,</a> is a good approximation near Earth's surface, where g barely changes.
+            Over larger distances, gravity changes with separation, so we need a different equation.
         </p>
 
         <details class='derive'>
-            <summary>derivation of universal gravitational potential energy</summary>
-            $$U_{g} = mgh \quad g = \color{blue}{\frac{GM}{r^{2}}} $$
-            $$U_{g} = m{\color{blue}{\frac{GM}{r^{2}}}}h $$
+            <summary>universal gravitational potential energy</summary>
             <p>
-                If we define h to be zero when the two masses are zero distance apart, we can rename h to r.
+                For two point masses, or two nonoverlapping spherical bodies, gravitational potential energy is
             </p>
-            $$U_{g} = \frac{GM_{1}M_{2}}{r^{2}}r$$
-            $$U_{g} = \frac{GM_{1}M_{2}}{r} $$
-            <br>When distance is very big the energy goes to zero, so it makes sense to choose the zero of this gravitational potential energy at an infinite distance away. This means that as we bring a mass closer to another mass we have negative potential energy.
-            $$U_{g} = -\frac{GM_{1}M_{2}}{r} $$
-
-            <p><a href="https://physics.info/gravitation-energy/">Here</a> is a more complete derivation using calculus.</p>
+            $$U_{g} = -\frac{GM_{1}M_{2}}{r}$$
+            <p>
+                We choose zero potential energy at infinite separation. Gravity attracts the masses, so bringing them closer lowers their potential energy below zero.
+                Here r is the distance between their centers. We can't derive this equation by replacing g in mgh, because g changes as the masses move.
+            </p>
+            <p><a href="https://physics.info/gravitation-energy/">Here</a> is a derivation that accounts for changing gravity using calculus.</p>
         </details>
 
         <div class='definition'>
@@ -1731,7 +1729,7 @@
                 $$U_{f} = -\frac{(6.674 \times 10^{-11})(100\,000)(100\,000)}{10}$$
                 $$U_{f} = -0.068\,\mathrm{J}$$
                 <br>
-                <p>Work is a change in energy, so we can subtract the final energy from the initial.</p>
+                <p>Work is a change in energy, so we can subtract the initial energy from the final.</p>
                 $$W = \Delta U = U_{f} - U_{i} $$
                 $$W = (-0.068) - (-0.33)$$
                 $$W = 0.262 \, \mathrm{J}$$

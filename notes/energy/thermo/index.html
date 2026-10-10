@@ -37,13 +37,13 @@
 	<article>
 		<p>
 			Thermodynamics looks for statistical patterns in groups of particles.
-			A group of particles are called a <strong>system</strong>.
+			A group of particles is called a <strong>system</strong>.
 			Systems have properties that single particles don't, like temperature, pressure, volume, density, and
 			entropy.
 		</p>
 		<p>
 			Unlike other physics topics we've learned, thermodynamics is statistical.
-			It's predictions only have a probability of being true.
+			Its predictions only have a probability of being true.
 			It is never 100% certain.
 			But, the accuracy increases with more particles, and there are a very large number of particles in most systems.
 		</p>
@@ -153,7 +153,7 @@
 		<h1 class='underlined'>Heat</h1>
 		<p>
 			<strong>Heat</strong> is energy transferred from one system to another.
-			This is often done through thermal energy, but it also travel in other forms, like radiation, conduction, or convection.
+			This is often done through thermal energy, but it also travels in other forms, like radiation, conduction, or convection.
 			A system doesn't "have" heat, it has internal energy.
 			Heat is only heat when it transfers between systems.
 		</p>
@@ -186,11 +186,18 @@
 			same temperature. Heat flows from high temperature systems into low temperature systems.
 			<!-- This principle is called <strong>The Zeroeth Law of Thermodynamics</strong>. -->
 		</div>
-		<p>
-			An example of heat exiting a system is friction.
-			If you throw a foam ball, heat will leave the ball and enter the air.
-			The ball's kinetic energy converts into the thermal energy of the air.
-		</p>
+		<div class='example' data-topic="Heat">
+			<strong>Question:</strong> A foam ball slows down because of air resistance. Where does its lost kinetic energy go? Is this energy transfer heat?
+			<details>
+				<summary>answer</summary>
+				<p>
+					Air resistance does work on the ball. Energy from the ball's motion goes into motion of the air and internal energy of the air and ball. As that motion dies out, more of the energy becomes internal energy, which can warm them up.
+				</p>
+				<p>
+					The transfer caused by air resistance is work. Heat is energy transferred because of a temperature difference. If the ball becomes warmer than the surrounding air, heat flows from the ball to the air.
+				</p>
+			</details>
+		</div>
 		<p>
 			The concept of heat plays a role in all machines like computers, engines, and <a href="https://www.youtube.com/watch?v=6sSDXurPX-s">refrigerators</a>.
 		</p>
@@ -246,8 +253,8 @@
 					</p>
 					<p>
 						You should notice that the kinetic energy leaves the ball.
-						We call energy that leaves a system <strong>heat</strong>.
-						Heat energy can take many forms, but generally it's thermal energy, the kinetic energy of many microscopic particles.
+						Friction converts the ball's mechanical energy into internal energy of the ball and its surroundings.
+						<strong>Heat</strong> is energy transferred because of a temperature difference. Energy can also cross a system boundary as work, so not every energy transfer is heat.
 					</p>
 				</div>
 			</div>
@@ -493,9 +500,9 @@
 				On the other hand the macrostate of an orderly system has fewer possible microstates.
 			</p>
 			<p>
-				For example, the macrostate of some water atoms could be "20 Celsius and a pressure of 1 atmosphere".
+				For example, the macrostate of some water molecules could be "20 Celsius and a pressure of 1 atmosphere".
 				That one macrostate could originate from many different possible microstates.
-				The microstates each include the atom's velocities and positions and many other attributes,
+				The microstates each include the molecules' velocities and positions and many other attributes,
 				but in the macrostate these attributes are ignored in order to focus on what's easy to measure,
 				temperature and pressure.
 				A system that has many possible microstates that make a macrostate is high entropy.
@@ -577,11 +584,11 @@
 				We can view a car <a href="http://www.animatedengines.com/">engine</a> as a thermodynamic system.
 				An engine takes in concentrated, low entropy, energy in the form of gasoline.
 				An energy difference is produced when the gasoline goes through combustion.
-				That difference in energy concentration is then transformed in rotational energy, which makes the car
+				That difference in energy concentration is then transformed into rotational energy, which makes the car
 				move.
 			</p>
 			<p>
-				Energy is only useful, when it is in a lower entropy state than it's surroundings.
+				Energy is only useful, when it is in a lower entropy state than its surroundings.
 			</p>
 			<br>
 			<strong>Question:</strong> You can think about a human body as a thermodynamic system.
@@ -597,7 +604,7 @@
 				</p>
 			</details>
 			<br><br>
-			<strong>Question:</strong> The planet Earth and all it's <a href="https://www.youtube.com/watch?v=QImCld9YubE">life</a> can be <a href="https://www.youtube.com/watch?v=mkR9hMCOIhM">viewed</a> as a thermodynamic system.
+			<strong>Question:</strong> The planet Earth and all its <a href="https://www.youtube.com/watch?v=QImCld9YubE">life</a> can be <a href="https://www.youtube.com/watch?v=mkR9hMCOIhM">viewed</a> as a thermodynamic system.
 			As time goes forward the energy density of Earth spreads out and loses the ability to do work.
 			What keeps the entropy of the Earth <a href="https://www.youtube.com/watch?v=OT5AXGS1aL8">low</a>?
 			<details>
@@ -713,9 +720,9 @@
 			This is because as complex systems change they tend to get more chaotic.
 		</p>
 		<p>
-			The entropy of a system increases over time.
-			This holds for all the various definitions of entropy.
-			As time moves forward, a system will almost always stay the same or get messier.
+			The total entropy of an isolated system does not decrease.
+			Part of a system can become more orderly if its surroundings gain enough entropy.
+			When using disorder as a model, remember to include both the system and its surroundings.
 		</p>
 		<div class="definition">
 			The <strong>second law of thermodynamics</strong> states that entropy of an isolated system doesn't decrease over time.
@@ -862,7 +869,7 @@
 			<p>
 				The simulation below has 150 particles on each side.
 				As time progresses forward, the particles quickly mix together.
-				Yet, the odds of the 300 particles <a href="https://www.youtube.com/watch?v=VCXqELB3UPg">unmixing</a> is so unlikely that it would take longer than the age of the universe.
+				Yet, the probability of the 300 particles <a href="https://www.youtube.com/watch?v=VCXqELB3UPg">unmixing</a> is so low that it would take longer than the age of the universe.
 			</p>
 			<!-- <p>Adjust the time rate to start the simulation.</p> -->
 			<canvas class='center' id='entropy0' height='258' width='600' style="background-color:#fff; border: 0px solid #556; box-shadow: none;"></canvas>
@@ -886,7 +893,7 @@
 				<summary>Investigation</summary>
 				<p>
 					Let's say that each particle can be in only 2 states: left or right.
-					<br>We can count the total number ways to put particles in one of 2 states.
+					<br>We can count the total number of ways to put particles in one of 2 states.
 				</p>
 				<svg viewBox="-2 -2 600 280">
 					<g fill="#000" font-size="22px" dominant-baseline="middle" text-anchor="middle">
@@ -1036,11 +1043,11 @@
 					</tr>
 				</table>
 				<!-- $$2^{n} = 2^{20} = 1\,048\,576 $$ -->
-				<p>Trying random configurations would take on average half the number of total states to reach our unique unmixed state.</p>
+				<p>Trying random configurations would take on average half the number of total states to reach our unique unmixed state. Of course this is a very rough estimate.</p>
 				$$\frac{2^{n}}{2}$$
 				<p>
 					I wrote a program that counts how often a particle in the simulation switches states at the fastest
-					time rate. For ten particles on each sides there are about 18.75 switches per second or one every 1/18.75 seconds.
+					time rate. For ten particles on each side there are about 18.75 switches per second or one every 1/18.75 seconds.
 				</p>
 				$$T_{avg} \approx \left(\frac{2^{20}}{2}\right) \left(\frac{1}{18.75}\right) \mathrm{s}$$
 				$$T_{avg} \approx 27\,960 \, \mathrm{s} = 7.767 \, \mathrm{hr}$$
