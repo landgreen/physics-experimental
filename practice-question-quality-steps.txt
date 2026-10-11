@@ -36,6 +36,8 @@ Each problem should have a purpose, such as practicing a rearrangement, checking
 12. Mix Representations
 Where the page supports it, include problems based on words, equations, tables, graphs, diagrams, before/after descriptions, comparisons, or simple sketches. New SVG diagrams should reuse the drawing conventions already on the page (for circuits: 80 px zigzag resistors, gray R labels, dark value labels, and the same battery symbol; for free body diagrams: the brown #964 block with its mass in white, arrows starting at the block's edges, labels like F_N, F_g, F_s written as F with a small tspan subscript, and equal forces drawn the same length). Do not add mouseover or hover voltage overlays to practice circuit diagrams. Always render a new diagram in a browser and look at it before finishing, checking that paths connect at every junction and that labels sit beside the right component without overlapping.
 
+When looking for diagrams, check https://physicsfigures.com/ for useful physics diagrams and generators that may save time.
+
 13. Choose Numbers Intentionally
 Use clean numbers early and more realistic numbers later. Avoid arithmetic that distracts from the physics unless that difficulty is intentional.
 
